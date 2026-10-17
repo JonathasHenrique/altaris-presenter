@@ -253,13 +253,46 @@ header.app-nav {
   background: #161922;
   border: 1px solid var(--border-accent);
   border-radius: var(--radius-md);
-  padding: 6px;
-  width: 230px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
-  z-index: 100;
+  padding: 8px;
+  min-width: 320px;
+  width: max-content;
+  max-width: 420px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.85);
+  z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+}
+
+.popover-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  user-select: none;
+  width: 100%;
+}
+
+.popover-item:hover {
+  background: rgba(99, 102, 241, 0.2);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.popover-item.active {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #fff;
+  font-weight: 600;
 }
 
 .menu-item {

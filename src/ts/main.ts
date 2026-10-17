@@ -221,6 +221,23 @@ async function initPlaylist() {
 // Render Playlist in Left Panel
 function renderPlaylist() {
   playlistContainer.innerHTML = "";
+  
+  const countBadge = document.getElementById("playlist-count-badge");
+  if (countBadge) {
+    countBadge.textContent = `(${playlist.length} itens)`;
+  }
+
+  if (playlist.length === 0) {
+    playlistContainer.innerHTML = `
+      <div style="padding: 24px 14px; text-align: center; color: #64748b; font-size: 0.8rem; border: 1px dashed rgba(255,255,255,0.12); border-radius: 12px; margin-top: 8px;">
+        <div style="font-size: 1.6rem; margin-bottom: 8px;">📋</div>
+        <div style="font-weight: 600; color: #94a3b8; margin-bottom: 4px;">Culto Vazio</div>
+        <div>Clique nos botões acima (<b>Bíblia</b>, <b>Web</b> ou <b>Harpa</b>) para adicionar itens ao culto.</div>
+      </div>
+    `;
+    return;
+  }
+
   playlist.forEach((item, idx) => {
     const el = document.createElement("div");
     el.className = `glass-panel ${idx === activeItemIndex ? "btn-primary" : ""}`;
@@ -533,6 +550,13 @@ btnBiblePill.addEventListener("click", (e) => {
   if (isHidden) renderBiblePopoverList();
 });
 
+btnBiblePill.addEventListener("dblclick", (e) => {
+  e.stopPropagation();
+  popoverBibleVersions.style.display = "none";
+  modalBibleNavigator.style.display = "flex";
+  renderBibleNavigator();
+});
+
 document.addEventListener("click", (e) => {
   if (!popoverBibleVersions.contains(e.target as Node) && e.target !== btnBiblePill) {
     popoverBibleVersions.style.display = "none";
@@ -543,14 +567,29 @@ function renderBiblePopoverList() {
   const versions = BibleEngine.getAvailableVersions();
   const active = BibleEngine.getActiveVersion();
 
+  const btnOpenNav = document.getElementById("btn-popover-open-visual-bible");
+  if (btnOpenNav) {
+    btnOpenNav.onclick = () => {
+      popoverBibleVersions.style.display = "none";
+      modalBibleNavigator.style.display = "flex";
+      renderBibleNavigator();
+    };
+  }
+
   popoverBibleList.innerHTML = "";
   versions.forEach((v) => {
     const row = document.createElement("div");
     const isActive = v.id === active;
     row.className = `popover-item ${isActive ? "active" : ""}`;
+    row.style.whiteSpace = "nowrap";
+    row.style.display = "flex";
+    row.style.alignItems = "center";
+    row.style.justifyContent = "space-between";
+    row.style.gap = "12px";
+    row.style.padding = "8px 12px";
     row.innerHTML = `
-      <span>${v.name}</span>
-      ${isActive ? `<span style="color: #6366f1; font-weight: 800;">✓</span>` : ""}
+      <span style="font-weight: ${isActive ? "700" : "500"}; color: ${isActive ? "#fff" : "#cbd5e1"};">${v.name}</span>
+      ${isActive ? `<span style="color: #6366f1; font-weight: 800;">✓</span>` : `<span style="color: transparent;">✓</span>`}
     `;
     row.addEventListener("click", async () => {
       await BibleEngine.setVersion(v.id);
@@ -560,6 +599,10 @@ function renderBiblePopoverList() {
       renderBiblePopoverList();
       populateBibleBooks(true);
       updateBiblePreviewFromDropdowns();
+
+      // Open the visual Bible Navigator immediately!
+      modalBibleNavigator.style.display = "flex";
+      renderBibleNavigator();
     });
     popoverBibleList.appendChild(row);
   });
@@ -948,14 +991,9 @@ document.getElementById("btn-open-stage")?.addEventListener("click", async () =>
 const btnStream = document.getElementById("btn-open-stream")!;
 btnStream.addEventListener("click", async () => {
   const info = await getServerInfo();
-  if (!info) {
-    window.open("/stream.html", "StreamWindow", "width=1280,height=720,menubar=no,toolbar=no");
-    return;
-  }
-  await navigator.clipboard.writeText(info.obs_url);
-  const original = btnStream.innerHTML;
-  btnStream.textContent = "Link copiado! Cole no OBS";
-  setTimeout(() => (btnStream.innerHTML = original), 2500);
+  const targetUrl = info ? info.obs_url : "http://localhost:7878/stream.html";
+  window.open(targetUrl, "StreamWindow", "width=1280,height=720,menubar=no,toolbar=no");
+  try { await navigator.clipboard.writeText(targetUrl); } catch (e) {}
 });
 
 document.getElementById("btn-open-remote")?.addEventListener("click", () => void showQrModal());
@@ -1545,6 +1583,8 @@ document.querySelectorAll(".bible-ver-item").forEach(item => {
       const icon = el.querySelector(".item-icon");
       if (icon) icon.textContent = el.getAttribute("data-ver") === ver ? "✓" : " ";
     });
+    modalBibleNavigator.style.display = "flex";
+    renderBibleNavigator();
   });
 });
 
