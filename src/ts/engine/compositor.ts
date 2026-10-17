@@ -248,11 +248,18 @@ export class SlideCompositor {
     const ctx = this.ctx;
     ctx.save();
     const x = 90;
-    const { size, lines } = this.ltLines(slide, 700, VW - 2 * x, 4, 52, 34);
+    const logoSpace = this.logoImg ? 140 : 0;
+    const textX = x + logoSpace;
+    const { size, lines } = this.ltLines(slide, 700, VW - 2 * x - logoSpace, 4, 52, 34);
     const lineH = size * 1.3;
     const headerH = slide.header ? 44 : 0;
     const blockH = headerH + lines.length * lineH;
     let y = VH - 70 - blockH;
+
+    if (this.logoImg) {
+      const s = Math.min(blockH + 10, 120);
+      ctx.drawImage(this.logoImg, x, y + (blockH - s) / 2, s, s);
+    }
 
     ctx.textAlign = "left";
     if (slide.header) {
@@ -260,7 +267,7 @@ export class SlideCompositor {
       ctx.fillStyle = "#818cf8";
       ctx.shadowColor = "rgba(0,0,0,0.9)";
       ctx.shadowBlur = 8;
-      ctx.fillText(slide.header.toUpperCase(), x, y + 28);
+      ctx.fillText(slide.header.toUpperCase(), textX, y + 28);
       y += headerH;
     }
     ctx.font = `700 ${size}px ${FONT}`;
@@ -270,8 +277,8 @@ export class SlideCompositor {
     ctx.fillStyle = "#fff";
     y += size;
     for (const line of lines) {
-      ctx.strokeText(line, x, y);
-      ctx.fillText(line, x, y);
+      ctx.strokeText(line, textX, y);
+      ctx.fillText(line, textX, y);
       y += lineH;
     }
     ctx.restore();

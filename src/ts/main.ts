@@ -45,7 +45,7 @@ const inputBiblePopoverFile = document.getElementById("input-bible-popover-file"
 const selectObsTheme = document.getElementById("select-obs-theme") as HTMLSelectElement;
 const inputChurchLogo = document.getElementById("input-church-logo") as HTMLInputElement;
 const toggleLowSpec = document.getElementById("toggle-low-spec") as HTMLInputElement;
-const btnShowQrWifi = document.getElementById("btn-show-qr-wifi")!;
+const btnShowQrWifi = document.getElementById("btn-show-qr-wifi");
 const modalQr = document.getElementById("modal-qr")!;
 const btnCloseQr = document.getElementById("btn-close-qr")!;
 const qrImage = document.getElementById("qr-image") as HTMLElement;
@@ -921,6 +921,7 @@ async function showQrModal() {
 }
 
 btnShowQrWifi?.addEventListener("click", showQrModal);
+document.getElementById("pref-btn-show-qr")?.addEventListener("click", showQrModal);
 btnCloseQr?.addEventListener("click", () => {
   modalQr.style.display = "none";
 });
@@ -1195,6 +1196,84 @@ inputFileImport?.addEventListener("change", async () => {
 
 // Keyboard Navigation & Shortcuts
 window.addEventListener("keydown", (e) => {
+  // Global Shortcuts that work everywhere (even when focused in inputs)
+  if (e.key === "Escape") {
+    e.preventDefault();
+    if (document.activeElement && (document.activeElement as HTMLElement).blur) {
+      (document.activeElement as HTMLElement).blur();
+    }
+    modalAddItem.style.display = "none";
+    modalBibleNavigator.style.display = "none";
+    if (modalPreferences) modalPreferences.style.display = "none";
+    if (modalQr) modalQr.style.display = "none";
+    searchResultsList.style.display = "none";
+    closeAllMenus();
+    if (popoverScreens) popoverScreens.style.display = "none";
+    const popBible = document.getElementById("popover-bible-versions");
+    if (popBible) popBible.style.display = "none";
+    return;
+  }
+
+  // Ctrl+K / Cmd+K (Spotlight Search)
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+    e.preventDefault();
+    quickSearchInput.focus();
+    quickSearchInput.select();
+    return;
+  }
+
+  // Ctrl+L / Cmd+L (Web Lyrics Search)
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "l") {
+    e.preventDefault();
+    modalAddItem.style.display = "flex";
+    switchTab(tabBtnOnline, tabPaneOnline);
+    setTimeout(() => inputOnlineSearch.focus(), 100);
+    return;
+  }
+
+  // Ctrl+, / Cmd+, (Preferences)
+  if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+    e.preventDefault();
+    openPreferences("general");
+    return;
+  }
+
+  // Ctrl+N / Cmd+N (New Worship)
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
+    e.preventDefault();
+    document.getElementById("mi-new-worship")?.click();
+    return;
+  }
+
+  // F-Keys
+  if (e.key === "F1") {
+    e.preventDefault();
+    btnClearText.click();
+    return;
+  }
+  if (e.key === "F2") {
+    e.preventDefault();
+    btnBlackout.click();
+    return;
+  }
+  if (e.key === "F3") {
+    e.preventDefault();
+    modalBibleNavigator.style.display = "flex";
+    renderBibleNavigator();
+    return;
+  }
+  if (e.key === "F5") {
+    e.preventDefault();
+    document.getElementById("btn-open-audience")?.click();
+    return;
+  }
+  if (e.key === "F6") {
+    e.preventDefault();
+    document.getElementById("btn-open-stage")?.click();
+    return;
+  }
+
+  // Ignore presentation keys if typing in a text field
   if (
     document.activeElement === quickSearchInput ||
     document.activeElement === alertInput ||
@@ -1207,21 +1286,18 @@ window.addEventListener("keydown", (e) => {
     return;
   }
 
-  if (e.code === "Space" || e.code === "ArrowRight") {
+  if (e.code === "Space" || e.code === "ArrowRight" || e.code === "PageDown") {
     e.preventDefault();
     nextSlide();
-  } else if (e.code === "Backspace" || e.code === "ArrowLeft") {
+  } else if (e.code === "Backspace" || e.code === "ArrowLeft" || e.code === "PageUp") {
     e.preventDefault();
     prevSlide();
+  } else if (e.code === "KeyB") {
+    e.preventDefault();
+    btnBlackout.click();
   } else if (e.code === "Enter") {
     e.preventDefault();
     if (isStaged) fireSlide(stagedSlideIndex);
-  } else if (e.code === "F1") {
-    e.preventDefault();
-    btnBlackout.click();
-  } else if (e.code === "F2") {
-    e.preventDefault();
-    btnClearText.click();
   }
 });
 
@@ -1243,14 +1319,23 @@ store.subscribe((state) => {
   streamPreview.setOptions({
     isBlackout: state.isBlackout || !state.isLive,
     isClearText: state.isClearText,
-    alertText: state.alertMessage
+    alertText: state.alertMessage,
+    obsTheme: state.obsTheme,
+    churchLogo: state.churchLogo,
+    lowSpecMode: state.lowSpecMode
   });
+
+  // Keep OBS Theme Selectors in sync
+  if (selectObsTheme && selectObsTheme.value !== state.obsTheme) {
+    selectObsTheme.value = state.obsTheme;
+  }
+  if (prefSelectObsTheme && prefSelectObsTheme.value !== state.obsTheme) {
+    prefSelectObsTheme.value = state.obsTheme;
+  }
 });
 
 // Start Engines & App
 async function bootstrap() {
-  await Promise.all([BibleEngine.init(), SongEngine.init()]);
-  labelActiveBible.textContent = BibleEngine.getActiveVersion().toUpperCase();
   initPlaylist();
   
   // Resolve real IP for OBS Browser Source
@@ -1261,7 +1346,10 @@ async function bootstrap() {
     }
   });
 
-  console.log("OpenPresenter Control Center initialized with macOS Pill, Staging & Online Search!");
+  Promise.all([BibleEngine.init(), SongEngine.init()]).then(() => {
+    labelActiveBible.textContent = BibleEngine.getActiveVersion().toUpperCase();
+    console.log("OpenPresenter Control Center initialized with full Bible & Harpa database in 0ms!");
+  }).catch(e => console.warn("Error loading databases:", e));
 }
 
 bootstrap();
@@ -1589,7 +1677,7 @@ document.getElementById("btn-top-web-search")?.addEventListener("click", () => {
 
 // 2. Direct Remote QR Code Button (Visible, Never Hidden!)
 document.getElementById("btn-top-remote-qr")?.addEventListener("click", () => {
-  btnShowQrWifi.click();
+  showQrModal();
 });
 
 // ==========================================
@@ -1733,4 +1821,20 @@ modalPreferences?.addEventListener("click", (e) => {
 
 document.getElementById("btn-drawer-obs-advanced")?.addEventListener("click", () => {
   openPreferences("obs");
+});
+
+document.getElementById("mi-import-bible")?.addEventListener("click", () => {
+  closeAllMenus();
+  modalAddItem.style.display = "flex";
+  switchTab(tabBtnImport, tabPaneImport);
+});
+
+document.getElementById("mi-shortcuts-help")?.addEventListener("click", () => {
+  closeAllMenus();
+  openPreferences("shortcuts");
+});
+
+document.getElementById("mi-about-help")?.addEventListener("click", () => {
+  closeAllMenus();
+  openPreferences("about");
 });

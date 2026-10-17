@@ -366,6 +366,7 @@
         <button class="prefs-tab-btn" data-tab="displays"><span class="tab-icon">📺</span> Telas</button>
         <button class="prefs-tab-btn" data-tab="obs"><span class="tab-icon">📡</span> OBS Stream</button>
         <button class="prefs-tab-btn" data-tab="remote"><span class="tab-icon">📱</span> Controle Remoto</button>
+        <button class="prefs-tab-btn" data-tab="shortcuts"><span class="tab-icon">⌨️</span> Atalhos</button>
         <button class="prefs-tab-btn" data-tab="about"><span class="tab-icon">ℹ️</span> Sobre</button>
         <button id="btn-close-prefs" class="btn btn-ghost" style="margin-left: auto; padding: 4px 10px; font-size: 1rem;">&times;</button>
       </div>
@@ -488,6 +489,104 @@
                 <div id="pref-remote-url" style="font-family: monospace; font-size: 0.8rem; color: #818cf8;">Carregando...</div>
               </div>
               <button id="pref-btn-show-qr" class="btn btn-primary" style="padding: 4px 12px;">Ver QR Code</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Atalhos do Teclado -->
+        <div class="prefs-section" id="prefs-pane-shortcuts" style="display: none;">
+          <div class="prefs-group">
+            <div style="font-weight: 700; font-size: 0.95rem; color: #fff; margin-bottom: 4px;">Guia Completo de Atalhos do Teclado</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 16px;">Comandos rápidos para operar o culto com agilidade, compatível com passadores de slide sem fio (Logitech).</div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Próximo Slide</div>
+                  <div style="font-size: 0.7rem; color: #94a3b8;">Avança letra ou versículo</div>
+                </div>
+                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">Espaço / ➔ / PageDown</span>
+              </div>
+
+              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Slide Anterior</div>
+                  <div style="font-size: 0.7rem; color: #94a3b8;">Retorna para o slide anterior</div>
+                </div>
+                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">Backspace / ⬅ / PageUp</span>
+              </div>
+
+              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Limpar Texto</div>
+                  <div style="font-size: 0.7rem; color: #94a3b8;">Oculta a letra mantendo o fundo</div>
+                </div>
+                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">F1</span>
+              </div>
+
+              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Blackout Total</div>
+                  <div style="font-size: 0.7rem; color: #94a3b8;">Escurece totalmente o telão</div>
+                </div>
+                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">F2 ou B</span>
+              </div>
+
+              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Navegador Bíblico Visual</div>
+                  <div style="font-size: 0.7rem; color: #94a3b8;">Livros, capítulos e versículos</div>
+                </div>
+                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">F3</span>
+              </div>
+
+              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Projetor do Telão</div>
+                  <div style="font-size: 0.7rem; color: #94a3b8;">Abre a janela de saída para o público</div>
+                </div>
+                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">F5</span>
+              </div>
+
+              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Retorno de Palco</div>
+                  <div style="font-size: 0.7rem; color: #94a3b8;">Monitor dos músicos e pregadores</div>
+                </div>
+                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">F6</span>
+              </div>
+
+              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Busca Rápida Spotlight</div>
+                  <div style="font-size: 0.7rem; color: #94a3b8;">Foca imediatamente a barra de busca</div>
+                </div>
+                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">⌘K / Ctrl+K</span>
+              </div>
+
+              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Buscar Louvores na Web</div>
+                  <div style="font-size: 0.7rem; color: #94a3b8;">Abre busca online Vagalume/Cifras</div>
+                </div>
+                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">⌘L / Ctrl+L</span>
+              </div>
+
+              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Preferências / Ajustes</div>
+                  <div style="font-size: 0.7rem; color: #94a3b8;">Configurações do sistema</div>
+                </div>
+                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">⌘, / Ctrl+,</span>
+              </div>
+
+              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Fechar Menus e Janelas</div>
+                  <div style="font-size: 0.7rem; color: #94a3b8;">Volta para a operação principal</div>
+                </div>
+                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">Esc</span>
+              </div>
             </div>
           </div>
         </div>
