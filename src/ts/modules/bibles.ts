@@ -426,20 +426,41 @@ export class BibleEngine {
     };
   }
 
-  static versesToPlaylistItem(verses: BibleVerse[]): PlaylistItem {
+  static versesToPlaylistItem(verses: BibleVerse[], loadFullChapter: boolean = true): { item: PlaylistItem; startSlideIndex: number } {
     if (verses.length === 0) throw new Error("Sem versículos");
     const first = verses[0];
     const last = verses[verses.length - 1];
+
+    let allSlides: Slide[] = [];
+    let startSlideIndex = 0;
+
+    if (loadFullChapter) {
+      // Carrega o capítulo inteiro para que a leitura continue sem interrupção!
+      const chapterVerses = this.getChapterVerses(first.book, first.chapter);
+      if (chapterVerses.length > 0) {
+        allSlides = chapterVerses.map((v) => this.verseToSlide(v));
+        startSlideIndex = Math.max(0, first.verse - 1);
+        if (startSlideIndex >= allSlides.length) startSlideIndex = 0;
+      } else {
+        allSlides = verses.map((v) => this.verseToSlide(v));
+      }
+    } else {
+      allSlides = verses.map((v) => this.verseToSlide(v));
+    }
+
     const title =
       verses.length === 1
-        ? `${first.book} ${first.chapter}:${first.verse}`
-        : `${first.book} ${first.chapter}:${first.verse}-${last.verse}`;
+        ? `${first.book} ${first.chapter}:${first.verse} (${first.version})`
+        : `${first.book} ${first.chapter}:${first.verse}-${last.verse} (${first.version})`;
 
     return {
-      id: `bible-${Date.now()}`,
-      title: `${title} (${first.version})`,
-      type: "bible",
-      slides: verses.map((v) => this.verseToSlide(v))
+      item: {
+        id: `bible-${Date.now()}`,
+        title,
+        type: "bible",
+        slides: allSlides
+      },
+      startSlideIndex
     };
   }
 }

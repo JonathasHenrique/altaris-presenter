@@ -7,39 +7,118 @@
   <link rel="stylesheet" href="/src/styles/main.css">
 </head>
 <body>
-  <div id="app">
-    <!-- Top macOS Unified Navigation Bar -->
-    <header class="app-nav glass-header">
-      <!-- Left: Brand & Status -->
-      <div class="brand">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="5 3 19 12 5 21 5 3"></polygon>
-        </svg>
-        <span class="brand-title">OpenPresenter</span>
-        <div class="status-pill-indicator">
-          <span class="status-dot-pulse"></span>
-          <span>Ao Vivo</span>
+  <div id="app" style="grid-template-rows: 28px 52px 1fr 30px;">
+    <!-- 1. Apple macOS Top Menubar -->
+    <nav class="macos-menubar">
+      <!-- Menu: OpenPresenter -->
+      <div class="menu-root" id="m-root-app">
+        <span class="menu-title app-name">OpenPresenter</span>
+        <div class="macos-dropdown" id="m-drop-app" style="display: none;">
+          <button class="menu-item" id="mi-about"><span class="item-icon">ℹ️</span> Sobre o OpenPresenter...</button>
+          <button class="menu-item" id="mi-settings"><span class="item-icon">⚙️</span> Preferências / Ajustes... <span class="shortcut">⌘,</span></button>
+          <hr class="menu-divider">
+          <button class="menu-item" id="mi-quit"><span class="item-icon">✕</span> Encerrar OpenPresenter <span class="shortcut">⌘Q</span></button>
         </div>
       </div>
 
-      <!-- Center: Spotlight Search Bar -->
-      <div class="spotlight-bar">
-        <span style="font-size: 0.9rem; opacity: 0.6;">🔍</span>
-        <input type="text" id="quick-search-input" placeholder="Buscar hinos, letras na web ou passagens bíblicas (ex: jo 3 16)..." autocomplete="off">
-        <span class="spotlight-kbd">⌘K</span>
+      <!-- Menu: Arquivo -->
+      <div class="menu-root" id="m-root-file">
+        <span class="menu-title">Arquivo</span>
+        <div class="macos-dropdown" id="m-drop-file" style="display: none;">
+          <button class="menu-item" id="mi-new-worship"><span class="item-icon">📋</span> Novo Culto <span class="shortcut">⌘N</span></button>
+          <button class="menu-item" id="mi-add-item"><span class="item-icon">➕</span> Adicionar Item ao Culto... <span class="shortcut">⌘A</span></button>
+          <hr class="menu-divider">
+          <button class="menu-item" id="mi-import-file"><span class="item-icon">📂</span> Importar Arquivo (ProPresenter, Holyrics, OpenLP)... <span class="shortcut">⌘O</span></button>
+        </div>
       </div>
 
-      <!-- Right: Screen Menu & Panic Actions -->
-      <div class="nav-actions">
-        <!-- Direct Visual Bible Launcher -->
-        <button id="btn-top-bible-nav" class="btn" title="Abrir Navegador Bíblico Visual Completo (Atalho: F3)" style="color: #34d399; border-color: rgba(52, 211, 153, 0.35);">
+      <!-- Menu: Bíblia -->
+      <div class="menu-root" id="m-root-bible">
+        <span class="menu-title">Bíblia</span>
+        <div class="macos-dropdown" id="m-drop-bible" style="display: none;">
+          <button class="menu-item" id="mi-bible-nav"><span class="item-icon">📖</span> Navegador Bíblico Visual... <span class="shortcut">F3</span></button>
+          <hr class="menu-divider">
+          <button class="menu-item bible-ver-item" data-ver="acf"><span class="item-icon">✓</span> Almeida Corrigida Fiel (ACF)</button>
+          <button class="menu-item bible-ver-item" data-ver="arc"><span class="item-icon"> </span> Almeida Revista e Corrigida (ARC)</button>
+          <button class="menu-item bible-ver-item" data-ver="tb"><span class="item-icon"> </span> Tradução Brasileira (TB)</button>
+          <hr class="menu-divider">
+          <button class="menu-item" id="mi-import-bible"><span class="item-icon">📂</span> Importar Tradução Bíblica (XML)...</button>
+        </div>
+      </div>
+
+      <!-- Menu: Letras -->
+      <div class="menu-root" id="m-root-lyrics">
+        <span class="menu-title">Letras</span>
+        <div class="macos-dropdown" id="m-drop-lyrics" style="display: none;">
+          <button class="menu-item" id="mi-web-lyrics"><span class="item-icon">🌐</span> Buscar Louvores na Web... <span class="shortcut">⌘L</span></button>
+          <button class="menu-item" id="mi-harpa-lyrics"><span class="item-icon">🎵</span> Harpa Cristã (640 Hinos)</button>
+          <button class="menu-item" id="mi-new-lyrics"><span class="item-icon">✍️</span> Criar Nova Letra...</button>
+        </div>
+      </div>
+
+      <!-- Menu: Telas -->
+      <div class="menu-root" id="m-root-screens">
+        <span class="menu-title">Telas</span>
+        <div class="macos-dropdown" id="m-drop-screens" style="display: none;">
+          <button class="menu-item" id="mi-screen-audience"><span class="item-icon">📽️</span> Projetor do Público (Telão) <span class="shortcut">F5</span></button>
+          <button class="menu-item" id="mi-screen-stage"><span class="item-icon">🎸</span> Retorno de Palco <span class="shortcut">F6</span></button>
+          <button class="menu-item" id="mi-screen-obs"><span class="item-icon">📡</span> Transmissão OBS (Stream)</button>
+        </div>
+      </div>
+
+      <!-- Menu: Ajuda -->
+      <div class="menu-root" id="m-root-help">
+        <span class="menu-title">Ajuda</span>
+        <div class="macos-dropdown" id="m-drop-help" style="display: none;">
+          <button class="menu-item" id="mi-shortcuts-help"><span class="item-icon">⌨️</span> Guia de Atalhos do Teclado...</button>
+          <button class="menu-item" id="mi-about-help"><span class="item-icon">📖</span> Documentação do OpenPresenter</button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 2. Main macOS Unified Toolbar -->
+    <header class="app-nav glass-header">
+      <!-- Left: Brand & Quick Direct Action Pills -->
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="brand">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span class="brand-title">OpenPresenter</span>
+        </div>
+
+        <!-- Direct Action Buttons (Explicit & Unmistakable) -->
+        <button id="btn-top-bible-nav" class="btn" title="Abrir Navegador Bíblico Visual Completo (Atalho: F3)" style="color: #34d399; border-color: rgba(52, 211, 153, 0.35); font-weight: 600;">
           <span>📖</span>
           <span>Bíblia</span>
         </button>
 
+        <button id="btn-top-web-search" class="btn" title="Buscar Louvores Online na Web (Atalho: ⌘L)" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); font-weight: 600;">
+          <span>🌐</span>
+          <span>Letras na Web</span>
+        </button>
+
+        <button id="btn-top-remote-qr" class="btn" title="Controle Remoto no Celular via Wi-Fi" style="color: #a5b4fc; border-color: rgba(165, 180, 252, 0.35); font-weight: 600;">
+          <span>📱</span>
+          <span>Celular</span>
+        </button>
+      </div>
+
+      <!-- Center: Spotlight Search Bar -->
+      <div class="spotlight-bar" style="position: relative;">
+        <span style="font-size: 0.9rem; opacity: 0.6;">🔍</span>
+        <input type="text" id="quick-search-input" placeholder="Buscar hinos, letras na web ou bíblia (ex: jo 3 16)..." autocomplete="off">
+        <span class="spotlight-kbd">⌘K</span>
+
+        <!-- Spotlight Live Autocomplete Dropdown -->
+        <div id="search-results-list" style="display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: #161922; border: 1px solid var(--border-accent); border-radius: 12px; max-height: 240px; overflow-y: auto; box-shadow: 0 18px 40px rgba(0,0,0,0.8); z-index: 2000; padding: 4px;"></div>
+      </div>
+
+      <!-- Right: Displays Menu & Master Panic Actions -->
+      <div class="nav-actions">
         <!-- Screens Popover Trigger -->
         <div class="screens-dropdown-wrapper">
-          <button id="btn-screens-menu" class="btn" title="Gerenciar Telas e Conexões">
+          <button id="btn-screens-menu" class="btn" title="Gerenciar Saídas de Vídeo">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
             <span>Telas</span>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
@@ -49,7 +128,6 @@
             <button id="btn-open-audience" class="menu-item"><span style="font-size: 1.1rem;">📽️</span> Projetor do Público (F5)</button>
             <button id="btn-open-stage" class="menu-item"><span style="font-size: 1.1rem;">🎸</span> Retorno de Palco (F6)</button>
             <button id="btn-open-stream" class="menu-item"><span style="font-size: 1.1rem;">📡</span> Transmissão OBS (Stream)</button>
-            <button id="btn-open-remote" class="menu-item"><span style="font-size: 1.1rem;">📱</span> Controle no Celular (QR Code)</button>
           </div>
         </div>
 
@@ -60,7 +138,7 @@
             <span id="label-active-bible" style="font-weight: 700; font-size: 0.75rem;">ACF</span>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
           </button>
-          <div id="popover-bible-versions" class="macos-menu-popover" style="display: none; width: 200px;">
+          <div id="popover-bible-versions" class="macos-menu-popover" style="display: none; width: 220px; left: auto; right: 0;">
             <div style="padding: 6px 10px; font-size: 0.7rem; font-weight: 700; color: #818cf8; border-bottom: 1px solid var(--border-subtle);">Traduções da Bíblia</div>
             <div id="popover-bible-list"></div>
             <div style="padding: 6px; border-top: 1px solid var(--border-subtle);">
@@ -84,7 +162,7 @@
       </div>
     </header>
 
-    <!-- Main 3-Column Workspace -->
+    <!-- 3. Main 3-Column Workspace -->
     <main class="workspace">
       <!-- Coluna 1: Culto de Hoje (Ordem do Culto) -->
       <section class="column glass-panel">
@@ -102,8 +180,13 @@
         </div>
 
         <div class="panel-content">
-          <!-- Quick Search Live Dropdown -->
-          <div id="search-results-list" style="display: none; max-height: 150px; overflow-y: auto; margin-bottom: 6px;" class="glass-panel"></div>
+          <!-- Quick Add Pills Row (Bíblia, Web, Harpa, Nova Letra) -->
+          <div class="quick-pills-row">
+            <button id="pill-quick-bible" class="quick-pill"><span class="pill-icon">📖</span> Bíblia</button>
+            <button id="pill-quick-web" class="quick-pill"><span class="pill-icon">🌐</span> Web</button>
+            <button id="pill-quick-harpa" class="quick-pill"><span class="pill-icon">🎵</span> Harpa</button>
+            <button id="pill-quick-new" class="quick-pill"><span class="pill-icon">✍️</span> Letra</button>
+          </div>
 
           <!-- Playlist Cards -->
           <div id="playlist-container" style="display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto;"></div>
@@ -114,7 +197,7 @@
             <span>Adicionar ao Culto</span>
           </button>
           
-          <!-- Hidden compatibility buttons for existing code -->
+          <!-- Hidden compatibility buttons -->
           <button id="btn-open-bible-nav" style="display: none;"></button>
           <button id="btn-open-web-search" style="display: none;"></button>
         </div>
@@ -140,9 +223,8 @@
             <span style="font-size: 1rem;">🟡</span>
             <span><b>ENGATILHADO (PRÉVIA):</b> <span id="staged-slide-name">Estrofe 1</span></span>
           </div>
-          <button id="btn-fire-staged" class="btn btn-primary" style="padding: 3px 12px; font-size: 0.75rem;">🔴 Projetar Agora (Espaço)</button>
+          <button id="btn-fire-staged" class="btn btn-primary" style="padding: 3px 12px; font-size: 0.75rem; white-space: nowrap;">🔴 Projetar Agora (Espaço)</button>
         </div>
-        <span id="badge-staged-status" style="display: none !important;"></span>
 
         <!-- Slides Matrix Grid -->
         <div id="slide-matrix" class="slide-grid"></div>
@@ -163,7 +245,7 @@
 
           <!-- Big Friendly Navigation Buttons for Church Volunteers -->
           <div class="quick-nav-bar">
-            <button id="btn-quick-prev" class="btn btn-big-nav" title="Voltar slide anterior">
+            <button id="btn-quick-prev" class="btn btn-big-nav" title="Voltar slide anterior (Seta Esquerda / Backspace)">
               ◀ Anterior
             </button>
             <button id="btn-quick-next" class="btn btn-primary btn-big-nav" title="Avançar para o próximo slide (Você também pode apertar a barra de ESPAÇO no teclado)">
@@ -201,9 +283,6 @@
                 <input type="checkbox" id="toggle-low-spec">
                 <span>Modo PC Antigo (0% GPU)</span>
               </label>
-              <button id="btn-show-qr-wifi" class="btn" style="padding: 2px 8px; font-size: 0.7rem; color: #818cf8;">
-                📱 QR Celular
-              </button>
             </div>
           </div>
 
@@ -245,10 +324,10 @@
     <footer class="status-bar">
       <div style="display: flex; align-items: center; gap: 8px;">
         <span class="status-dot"></span>
-        <span>Sistema Operacional: Linux Nativo (Tauri v2 + WebKitGTK)</span>
+        <span>OpenPresenter v1.0 • Linux Nativo (Tauri v2 + Rust)</span>
       </div>
       <div>
-        <span>Atalhos: <b>Espaço</b> = Próximo | <b>Seta Esquerda</b> = Anterior | <b>B</b> = Blackout | <b>C</b> = Limpar</span>
+        <span>Atalhos: <b>Espaço</b> = Próximo | <b>Seta Esquerda</b> = Anterior | <b>B</b> = Blackout | <b>C</b> = Limpar | <b>F3</b> = Bíblia | <b>⌘L</b> = Letras Web</span>
       </div>
       <div>
         <span id="status-clock" style="font-family: monospace; font-weight: 600;">00:00:00</span>
@@ -256,21 +335,124 @@
     </footer>
   </div>
 
-  <!-- QR Code Modal para Celular -->
-  <div id="modal-qr" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center;">
-    <div class="glass-panel" style="background: #111827; padding: 24px; border-radius: 16px; width: 340px; text-align: center; border: 1px solid var(--border-accent);">
-      <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 8px;">Controle Remoto no Celular</h3>
-      <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px;">Conecte o celular ao mesmo Wi-Fi e aponte a câmera para controlar os slides:</p>
+  <!-- QR Code Modal para Celular (Dedicado) -->
+  <div id="modal-qr" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2500; align-items: center; justify-content: center;">
+    <div class="glass-panel" style="background: #111827; padding: 24px; border-radius: 16px; width: 360px; text-align: center; border: 1px solid var(--border-accent); box-shadow: 0 25px 60px rgba(0,0,0,0.8);">
+      <div style="font-size: 2rem; margin-bottom: 6px;">📱</div>
+      <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 8px;">Controle Remoto no Celular</h3>
+      <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px;">Conecte o celular ao mesmo Wi-Fi da igreja e aponte a câmera para controlar a apresentação:</p>
       <div style="background: #fff; padding: 12px; border-radius: 12px; display: inline-block; margin-bottom: 16px;">
         <div id="qr-image" style="width: 200px; height: 200px;"></div>
       </div>
-      <div id="qr-url-text" style="font-family: monospace; font-size: 0.75rem; color: #818cf8; margin-bottom: 16px; word-break: break-all;"></div>
+      <div id="qr-url-text" style="font-family: monospace; font-size: 0.78rem; color: #818cf8; margin-bottom: 16px; word-break: break-all; background: rgba(99,102,241,0.1); padding: 8px; border-radius: 6px;"></div>
       <button id="btn-close-qr" class="btn btn-primary" style="width: 100%; justify-content: center;">Fechar</button>
     </div>
   </div>
 
-  <!-- Modal Adicionar Item ao Culto (Bíblia, Harpa, Letras Web, Nova Letra) -->
-  <div id="modal-add-item" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); backdrop-filter: blur(10px); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+  <!-- macOS Preferences / Ajustes Dialog (Image 5 style) -->
+  <div id="modal-preferences" class="macos-prefs-modal">
+    <div class="macos-prefs-window">
+      <!-- Top Apple Icon Toolbar -->
+      <div class="prefs-top-toolbar">
+        <button class="prefs-tab-btn active" data-tab="general"><span class="tab-icon">⚙️</span> Geral</button>
+        <button class="prefs-tab-btn" data-tab="bibles"><span class="tab-icon">📖</span> Bíblias</button>
+        <button class="prefs-tab-btn" data-tab="displays"><span class="tab-icon">📺</span> Telas</button>
+        <button class="prefs-tab-btn" data-tab="obs"><span class="tab-icon">📡</span> OBS Stream</button>
+        <button class="prefs-tab-btn" data-tab="remote"><span class="tab-icon">📱</span> Controle Remoto</button>
+        <button class="prefs-tab-btn" data-tab="about"><span class="tab-icon">ℹ️</span> Sobre</button>
+        <button id="btn-close-prefs" class="btn btn-ghost" style="margin-left: auto; padding: 4px 10px; font-size: 1rem;">&times;</button>
+      </div>
+
+      <!-- Preferences Body -->
+      <div class="prefs-content-body">
+        <!-- Tab: Geral -->
+        <div class="prefs-section" id="prefs-pane-general">
+          <div class="prefs-group">
+            <div class="prefs-row">
+              <div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Modo de Transição Padrão</div>
+                <div style="font-size: 0.75rem; color: #94a3b8;">1º clique engatilha na prévia, 2º clique projeta no telão</div>
+              </div>
+              <input type="checkbox" id="pref-two-click" checked>
+            </div>
+            <div class="prefs-row">
+              <div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Leitura Bíblica Contínua</div>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Carrega os versículos seguintes do capítulo para leitura ininterrupta</div>
+              </div>
+              <input type="checkbox" id="pref-continuous-bible" checked>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Bíblias -->
+        <div class="prefs-section" id="prefs-pane-bibles" style="display: none;">
+          <div class="prefs-group">
+            <div class="prefs-row">
+              <div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Tradução Padrão</div>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Tradução utilizada nas buscas rápidas e projeção</div>
+              </div>
+              <select id="pref-default-bible" class="btn">
+                <option value="acf">Almeida Corrigida Fiel (ACF)</option>
+                <option value="arc">Almeida Revista e Corrigida (ARC)</option>
+                <option value="tb">Tradução Brasileira (TB)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Telas -->
+        <div class="prefs-section" id="prefs-pane-displays" style="display: none;">
+          <div class="prefs-group">
+            <div style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 8px;">Monitores Detectados</div>
+            <div id="prefs-displays-list" style="font-size: 0.8rem; color: #94a3b8;">Detectando monitores disponíveis...</div>
+          </div>
+        </div>
+
+        <!-- Tab: OBS Stream -->
+        <div class="prefs-section" id="prefs-pane-obs" style="display: none;">
+          <div class="prefs-group">
+            <div class="prefs-row">
+              <div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Endereço do Navegador no OBS</div>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Adicione como Fonte de Navegador (Browser Source) no OBS Studio</div>
+              </div>
+              <div style="font-family: monospace; font-size: 0.8rem; color: #38bdf8;">http://localhost:7878/stream.html</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Controle Remoto -->
+        <div class="prefs-section" id="prefs-pane-remote" style="display: none;">
+          <div class="prefs-group">
+            <div class="prefs-row">
+              <div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Endereço de Acesso Local</div>
+                <div id="pref-remote-url" style="font-family: monospace; font-size: 0.8rem; color: #818cf8;">Carregando...</div>
+              </div>
+              <button id="pref-btn-show-qr" class="btn btn-primary" style="padding: 4px 12px;">Ver QR Code</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Sobre -->
+        <div class="prefs-section" id="prefs-pane-about" style="display: none;">
+          <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 4px;">OpenPresenter</div>
+            <div style="font-size: 0.85rem; color: #818cf8; margin-bottom: 12px;">Versão 1.0 (Linux x86_64)</div>
+            <p style="font-size: 0.8rem; color: #94a3b8; max-width: 480px; margin: 0 auto 16px;">
+              Software livre e nativo de projeção de letras e versículos bíblicos para igrejas, construído em Tauri v2, Rust e WebKitGTK. Alto desempenho, baixo consumo de RAM e compatibilidade total com ProPresenter, Holyrics e OpenLP.
+            </p>
+            <div style="font-size: 0.75rem; color: #64748b;">Desenvolvido com excelência para durar uma vida.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Adicionar Item ao Culto -->
+  <div id="modal-add-item" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); backdrop-filter: blur(10px); z-index: 2000; align-items: center; justify-content: center; padding: 16px;">
     <div class="glass-panel" style="background: #111827; border-radius: 16px; width: 840px; max-width: 95vw; max-height: 92vh; display: flex; flex-direction: column; border: 1px solid var(--border-accent); overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.8);">
       <!-- Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-secondary);">
@@ -334,7 +516,7 @@
         <!-- Tab 2: Letras Online -->
         <div id="tab-pane-online" style="display: none;">
           <div style="margin-bottom: 12px;">
-            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Buscar qualquer música na internet (Pesquisa em Milhares de Louvores Nacionais e Internacionais)</label>
+            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Buscar qualquer louvor na internet (Pesquisa em Milhares de Louvores Nacionais e Internacionais):</label>
             <div style="display: flex; gap: 8px;">
               <input type="text" id="input-online-search" placeholder="Ex: Bondade de Deus, Vitorioso És, A Casa é Sua, Me Atraiu, Fernandinho..." style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 0.9rem; outline: none;">
               <button id="btn-do-online-search" class="btn btn-primary" style="padding: 0 18px;">Buscar</button>
@@ -403,7 +585,7 @@
           <button id="btn-save-custom-song" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; font-weight: 600;">Salvar e Adicionar ao Culto</button>
         </div>
 
-        <!-- Tab 5: Importar Arquivos (Holyrics, ProPresenter, OpenLP) -->
+        <!-- Tab 5: Importar Arquivos -->
         <div id="tab-pane-import" style="display: none;">
           <div style="padding: 24px; text-align: center; border: 2px dashed var(--border-subtle); border-radius: 12px; margin-bottom: 16px;">
             <span style="font-size: 2rem; display: block; margin-bottom: 8px;">📂</span>
@@ -421,7 +603,7 @@
   </div>
 
   <!-- Modal Seletor Visual da Bíblia (O mais intuitivo do mundo) -->
-  <div id="modal-bible-navigator" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 1500; align-items: center; justify-content: center; padding: 20px;">
+  <div id="modal-bible-navigator" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 2200; align-items: center; justify-content: center; padding: 20px;">
     <div class="glass-panel" style="background: #111827; border-radius: 16px; width: 940px; max-width: 96vw; max-height: 90vh; display: flex; flex-direction: column; border: 1px solid var(--border-accent); overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.8);">
       <!-- Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-secondary);">

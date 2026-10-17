@@ -256,10 +256,11 @@ function renderPlaylist() {
   });
 }
 
-function selectPlaylistItem(index: number, fireImmediately: boolean = false) {
+function selectPlaylistItem(index: number, fireImmediately: boolean = false, startSlideIndex: number = 0) {
   if (index < 0 || index >= playlist.length) return;
   activeItemIndex = index;
-  stagedSlideIndex = 0;
+  const initialSlide = Math.min(Math.max(0, startSlideIndex), (playlist[index]?.slides.length || 1) - 1);
+  stagedSlideIndex = initialSlide;
   renderPlaylist();
 
   const item = playlist[index];
@@ -272,9 +273,9 @@ function selectPlaylistItem(index: number, fireImmediately: boolean = false) {
   renderSlideMatrix(item);
 
   if (fireImmediately) {
-    fireSlide(0);
+    fireSlide(initialSlide);
   } else {
-    stageSlide(0);
+    stageSlide(initialSlide);
   }
 }
 
@@ -406,22 +407,51 @@ btnFireStaged.addEventListener("click", () => {
 function nextSlide() {
   const item = playlist[activeItemIndex];
   if (!item) return;
-  const targetIdx = isStaged ? stagedSlideIndex + 1 : liveSlideIndex + 1;
+  const currentIdx = isStaged ? stagedSlideIndex : liveSlideIndex;
+  const targetIdx = currentIdx + 1;
+
   if (targetIdx < item.slides.length) {
     if (toggleTwoClick.checked) stageSlide(targetIdx);
     else fireSlide(targetIdx);
+  } else if (item.type === "bible") {
+    // Leitura Bíblica Contínua: se o pastor continuar pregando, carrega o próximo capítulo automaticamente!
+    try {
+      const lastSlide = item.slides[item.slides.length - 1];
+      const match = lastSlide.header?.match(/^([0-9]?[a-zá-ú\s]+)\s+([0-9]+):([0-9]+)/i);
+      if (match) {
+        const book = match[1].trim();
+        const nextChap = parseInt(match[2], 10) + 1;
+        const nextVerses = BibleEngine.getChapterVerses(book, nextChap);
+        if (nextVerses.length > 0) {
+          const nextSlides = nextVerses.map(v => BibleEngine.verseToSlide(v));
+          item.slides.push(...nextSlides);
+          item.title = `${book} ${match[2]}-${nextChap} (${BibleEngine.getActiveVersion().toUpperCase()})`;
+          activeItemTitle.textContent = item.title;
+          renderSlideMatrix(item);
+          if (toggleTwoClick.checked) stageSlide(targetIdx);
+          else fireSlide(targetIdx);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Continuar capítulo bíblico:", e);
+    }
+    if (activeItemIndex + 1 < playlist.length) {
+      selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked, 0);
+    }
   } else if (activeItemIndex + 1 < playlist.length) {
-    selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked);
+    selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked, 0);
   }
 }
 
 function prevSlide() {
-  const targetIdx = isStaged ? stagedSlideIndex - 1 : liveSlideIndex - 1;
+  const currentIdx = isStaged ? stagedSlideIndex : liveSlideIndex;
+  const targetIdx = currentIdx - 1;
   if (targetIdx >= 0) {
     if (toggleTwoClick.checked) stageSlide(targetIdx);
     else fireSlide(targetIdx);
   } else if (activeItemIndex > 0) {
-    selectPlaylistItem(activeItemIndex - 1, !toggleTwoClick.checked);
+    selectPlaylistItem(activeItemIndex - 1, !toggleTwoClick.checked, 0);
     const item = playlist[activeItemIndex];
     if (item) {
       if (toggleTwoClick.checked) stageSlide(item.slides.length - 1);
@@ -466,7 +496,7 @@ quickSearchInput.addEventListener("input", () => {
       };
       playlist.splice(activeItemIndex + 1, 0, playlistItem);
       renderPlaylist();
-      selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked);
+      selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked, 0);
       quickSearchInput.value = "";
       searchResultsList.style.display = "none";
     });
@@ -485,7 +515,7 @@ quickSearchInput.addEventListener("input", () => {
       const playlistItem = songToPlaylistItem(s, keyOffset);
       playlist.splice(activeItemIndex + 1, 0, playlistItem);
       renderPlaylist();
-      selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked);
+      selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked, 0);
       quickSearchInput.value = "";
       searchResultsList.style.display = "none";
     });
@@ -682,10 +712,10 @@ btnNavStage.addEventListener("click", () => {
     alert("Selecione pelo menos um versículo para engatilhar.");
     return;
   }
-  const item = BibleEngine.versesToPlaylistItem(navSelectedVerses);
-  playlist.splice(activeItemIndex + 1, 0, item);
+  const res = BibleEngine.versesToPlaylistItem(navSelectedVerses, true);
+  playlist.splice(activeItemIndex + 1, 0, res.item);
   renderPlaylist();
-  selectPlaylistItem(activeItemIndex + 1, false); // Stage
+  selectPlaylistItem(activeItemIndex + 1, false, res.startSlideIndex); // Stage at selected verse
   modalBibleNavigator.style.display = "none";
 });
 
@@ -694,10 +724,10 @@ btnNavProjectNow.addEventListener("click", () => {
     alert("Selecione pelo menos um versículo para projetar.");
     return;
   }
-  const item = BibleEngine.versesToPlaylistItem(navSelectedVerses);
-  playlist.splice(activeItemIndex + 1, 0, item);
+  const res = BibleEngine.versesToPlaylistItem(navSelectedVerses, true);
+  playlist.splice(activeItemIndex + 1, 0, res.item);
   renderPlaylist();
-  selectPlaylistItem(activeItemIndex + 1, true); // Fire now
+  selectPlaylistItem(activeItemIndex + 1, true, res.startSlideIndex); // Fire at selected verse
   modalBibleNavigator.style.display = "none";
 });
 
@@ -765,7 +795,7 @@ btnAddOnlineToPlaylist.addEventListener("click", () => {
   const item = songToPlaylistItem(song, keyOffset);
   playlist.splice(activeItemIndex + 1, 0, item);
   renderPlaylist();
-  selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked);
+  selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked, 0);
   modalAddItem.style.display = "none";
 });
 
@@ -1035,10 +1065,10 @@ btnAddBibleToPlaylist?.addEventListener("click", () => {
     updateBiblePreviewFromDropdowns();
   }
   if (currentBibleVersesPreview.length > 0) {
-    const item = BibleEngine.versesToPlaylistItem(currentBibleVersesPreview);
-    playlist.splice(activeItemIndex + 1, 0, item);
+    const res = BibleEngine.versesToPlaylistItem(currentBibleVersesPreview, true);
+    playlist.splice(activeItemIndex + 1, 0, res.item);
     renderPlaylist();
-    selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked);
+    selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked, res.startSlideIndex);
     modalAddItem.style.display = "none";
   }
 });
@@ -1079,7 +1109,7 @@ btnAddHarpaToPlaylist?.addEventListener("click", () => {
   const item = songToPlaylistItem(selectedHarpaSong, keyOffset);
   playlist.splice(activeItemIndex + 1, 0, item);
   renderPlaylist();
-  selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked);
+  selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked, 0);
   modalAddItem.style.display = "none";
 });
 
@@ -1101,7 +1131,7 @@ btnSaveCustomSong?.addEventListener("click", () => {
   const item = songToPlaylistItem(song, keyOffset);
   playlist.splice(activeItemIndex + 1, 0, item);
   renderPlaylist();
-  selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked);
+  selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked, 0);
 
   inputCustomTitle.value = "";
   inputCustomArtist.value = "";
@@ -1151,7 +1181,7 @@ inputFileImport?.addEventListener("change", async () => {
     const item = songToPlaylistItem(song, keyOffset);
     playlist.splice(activeItemIndex + 1, 0, item);
     renderPlaylist();
-    selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked);
+    selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked, 0);
 
     importStatusBox.innerHTML = `<span style="color: #10b981; font-weight: 700;">✓ Importado com Sucesso!</span> "${song.title}" (${song.artist}) com <b>${song.slides.length} slides</b> adicionada ao culto.`;
     setTimeout(() => {
@@ -1319,4 +1349,291 @@ document.getElementById("btn-top-bible-nav")?.addEventListener("click", () => {
   btn?.addEventListener("click", () => {
     if (popoverScreens) popoverScreens.style.display = "none";
   });
+});
+
+
+// ==========================================
+// Apple macOS Menu Bar & Menus Interactivity
+// ==========================================
+const menuRoots = document.querySelectorAll(".menu-root");
+let isMenuOpen = false;
+
+function closeAllMenus() {
+  document.querySelectorAll(".macos-dropdown").forEach(d => (d as HTMLElement).style.display = "none");
+  menuRoots.forEach(r => r.classList.remove("active"));
+  isMenuOpen = false;
+}
+
+menuRoots.forEach(root => {
+  const title = root.querySelector(".menu-title");
+  const dropdown = root.querySelector(".macos-dropdown") as HTMLElement;
+
+  title?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const wasOpen = dropdown.style.display === "flex";
+    closeAllMenus();
+    if (!wasOpen) {
+      dropdown.style.display = "flex";
+      root.classList.add("active");
+      isMenuOpen = true;
+    }
+  });
+
+  root.addEventListener("mouseenter", () => {
+    if (isMenuOpen) {
+      closeAllMenus();
+      dropdown.style.display = "flex";
+      root.classList.add("active");
+      isMenuOpen = true;
+    }
+  });
+});
+
+document.addEventListener("click", (e) => {
+  if (!(e.target as HTMLElement).closest(".menu-root")) {
+    closeAllMenus();
+  }
+});
+
+// Menu Actions
+document.getElementById("mi-about")?.addEventListener("click", () => {
+  closeAllMenus();
+  openPreferences("about");
+});
+
+document.getElementById("mi-settings")?.addEventListener("click", () => {
+  closeAllMenus();
+  openPreferences("general");
+});
+
+document.getElementById("mi-quit")?.addEventListener("click", () => {
+  window.close();
+});
+
+document.getElementById("mi-new-worship")?.addEventListener("click", () => {
+  closeAllMenus();
+  if (confirm("Deseja iniciar um novo culto? A ordem atual será limpa.")) {
+    playlist = [];
+    renderPlaylist();
+    gridContainer.innerHTML = '<div style="padding: 40px; text-align: center; color: #64748b;">Culto novo iniciado. Clique em "+ Adicionar ao Culto" para inserir louvores ou versículos.</div>';
+    activeItemTitle.textContent = "Culto Vazio";
+  }
+});
+
+document.getElementById("mi-add-item")?.addEventListener("click", () => {
+  closeAllMenus();
+  modalAddItem.style.display = "flex";
+});
+
+document.getElementById("mi-import-file")?.addEventListener("click", () => {
+  closeAllMenus();
+  modalAddItem.style.display = "flex";
+  switchTab(tabBtnImport, tabPaneImport);
+});
+
+document.getElementById("mi-bible-nav")?.addEventListener("click", () => {
+  closeAllMenus();
+  modalBibleNavigator.style.display = "flex";
+  renderBibleNavigator();
+});
+
+document.querySelectorAll(".bible-ver-item").forEach(item => {
+  item.addEventListener("click", async () => {
+    const ver = item.getAttribute("data-ver") || "acf";
+    closeAllMenus();
+    await BibleEngine.setVersion(ver);
+    labelActiveBible.textContent = ver.toUpperCase();
+    document.querySelectorAll(".bible-ver-item").forEach(el => {
+      const icon = el.querySelector(".item-icon");
+      if (icon) icon.textContent = el.getAttribute("data-ver") === ver ? "✓" : " ";
+    });
+  });
+});
+
+document.getElementById("mi-web-lyrics")?.addEventListener("click", () => {
+  closeAllMenus();
+  modalAddItem.style.display = "flex";
+  switchTab(tabBtnOnline, tabPaneOnline);
+  setTimeout(() => inputOnlineSearch.focus(), 100);
+});
+
+document.getElementById("mi-harpa-lyrics")?.addEventListener("click", () => {
+  closeAllMenus();
+  modalAddItem.style.display = "flex";
+  switchTab(tabBtnHarpa, tabPaneHarpa);
+});
+
+document.getElementById("mi-new-lyrics")?.addEventListener("click", () => {
+  closeAllMenus();
+  modalAddItem.style.display = "flex";
+  switchTab(tabBtnCustom, tabPaneCustom);
+});
+
+document.getElementById("mi-screen-audience")?.addEventListener("click", async () => {
+  closeAllMenus();
+  document.getElementById("btn-open-audience")?.click();
+});
+
+document.getElementById("mi-screen-stage")?.addEventListener("click", async () => {
+  closeAllMenus();
+  document.getElementById("btn-open-stage")?.click();
+});
+
+document.getElementById("mi-screen-obs")?.addEventListener("click", async () => {
+  closeAllMenus();
+  document.getElementById("btn-open-stream")?.click();
+});
+
+// ==========================================
+// Direct Visible Top Bar Action Buttons
+// ==========================================
+// 1. Direct Web Lyrics Search Button (Visible, Never Hidden!)
+document.getElementById("btn-top-web-search")?.addEventListener("click", () => {
+  modalAddItem.style.display = "flex";
+  switchTab(tabBtnOnline, tabPaneOnline);
+  setTimeout(() => inputOnlineSearch.focus(), 100);
+});
+
+// 2. Direct Remote QR Code Button (Visible, Never Hidden!)
+document.getElementById("btn-top-remote-qr")?.addEventListener("click", () => {
+  btnShowQrWifi.click();
+});
+
+// ==========================================
+// Sidebar Quick Pills (Bíblia, Web, Harpa, Nova Letra)
+// ==========================================
+document.getElementById("pill-quick-bible")?.addEventListener("click", () => {
+  modalBibleNavigator.style.display = "flex";
+  renderBibleNavigator();
+});
+
+document.getElementById("pill-quick-web")?.addEventListener("click", () => {
+  modalAddItem.style.display = "flex";
+  switchTab(tabBtnOnline, tabPaneOnline);
+  setTimeout(() => inputOnlineSearch.focus(), 100);
+});
+
+document.getElementById("pill-quick-harpa")?.addEventListener("click", () => {
+  modalAddItem.style.display = "flex";
+  switchTab(tabBtnHarpa, tabPaneHarpa);
+});
+
+document.getElementById("pill-quick-new")?.addEventListener("click", () => {
+  modalAddItem.style.display = "flex";
+  switchTab(tabBtnCustom, tabPaneCustom);
+});
+
+// ==========================================
+// Spotlight Autocomplete with Instant Web Action
+// ==========================================
+quickSearchInput.addEventListener("input", () => {
+  const query = quickSearchInput.value.trim();
+  if (query.length < 2) {
+    searchResultsList.style.display = "none";
+    return;
+  }
+
+  const verses = BibleEngine.findVerses(query);
+  const songs = SongEngine.findSongs(query);
+
+  searchResultsList.innerHTML = "";
+  searchResultsList.style.display = "block";
+
+  if (verses.length > 0) {
+    const v = verses[0];
+    const el = document.createElement("div");
+    el.className = "menu-item";
+    el.innerHTML = `<span class="item-icon">📖</span> <span><b>${v.book} ${v.chapter}:${v.verse}</b>: ${v.text.slice(0, 45)}...</span>`;
+    el.addEventListener("click", () => {
+      const res = BibleEngine.versesToPlaylistItem(verses, true);
+      playlist.splice(activeItemIndex + 1, 0, res.item);
+      renderPlaylist();
+      selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked, res.startSlideIndex);
+      searchResultsList.style.display = "none";
+      quickSearchInput.value = "";
+    });
+    searchResultsList.appendChild(el);
+  }
+
+  songs.slice(0, 3).forEach((s) => {
+    const el = document.createElement("div");
+    el.className = "menu-item";
+    el.innerHTML = `<span class="item-icon">🎵</span> <span><b>${s.title}</b> (${s.artist})</span>`;
+    el.addEventListener("click", () => {
+      const item = songToPlaylistItem(s, keyOffset);
+      playlist.splice(activeItemIndex + 1, 0, item);
+      renderPlaylist();
+      selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked);
+      searchResultsList.style.display = "none";
+      quickSearchInput.value = "";
+    });
+    searchResultsList.appendChild(el);
+  });
+
+  // Always append: Instant Search on Web
+  const webEl = document.createElement("div");
+  webEl.className = "menu-item";
+  webEl.style.background = "rgba(56, 189, 248, 0.15)";
+  webEl.style.color = "#38bdf8";
+  webEl.style.fontWeight = "600";
+  webEl.innerHTML = `<span class="item-icon">🌐</span> <span>Buscar "<b>${query}</b>" na Web (Milhares de Músicas)...</span>`;
+  webEl.addEventListener("click", () => {
+    searchResultsList.style.display = "none";
+    quickSearchInput.value = "";
+    modalAddItem.style.display = "flex";
+    switchTab(tabBtnOnline, tabPaneOnline);
+    inputOnlineSearch.value = query;
+    btnDoOnlineSearch.click();
+  });
+  searchResultsList.appendChild(webEl);
+});
+
+// Close search dropdown on click outside
+document.addEventListener("click", (e) => {
+  if (!quickSearchInput.contains(e.target as Node) && !searchResultsList.contains(e.target as Node)) {
+    searchResultsList.style.display = "none";
+  }
+});
+
+// ==========================================
+// macOS Preferences / Ajustes Dialog
+// ==========================================
+const modalPreferences = document.getElementById("modal-preferences");
+const btnClosePrefs = document.getElementById("btn-close-prefs");
+const prefsTabBtns = document.querySelectorAll(".prefs-tab-btn");
+
+function openPreferences(tabName: string = "general") {
+  if (modalPreferences) {
+    modalPreferences.style.display = "flex";
+    switchPrefsTab(tabName);
+  }
+}
+
+function switchPrefsTab(tabName: string) {
+  prefsTabBtns.forEach(btn => {
+    if (btn.getAttribute("data-tab") === tabName) btn.classList.add("active");
+    else btn.classList.remove("active");
+  });
+
+  document.querySelectorAll(".prefs-section").forEach(sec => {
+    (sec as HTMLElement).style.display = "none";
+  });
+
+  const targetPane = document.getElementById(`prefs-pane-${tabName}`);
+  if (targetPane) targetPane.style.display = "flex";
+}
+
+prefsTabBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const tab = btn.getAttribute("data-tab") || "general";
+    switchPrefsTab(tab);
+  });
+});
+
+btnClosePrefs?.addEventListener("click", () => {
+  if (modalPreferences) modalPreferences.style.display = "none";
+});
+
+modalPreferences?.addEventListener("click", (e) => {
+  if (e.target === modalPreferences) modalPreferences.style.display = "none";
 });
