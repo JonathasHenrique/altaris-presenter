@@ -1,0 +1,105 @@
+// OpenPresenter - núcleo nativo (Tauri v2).
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+mod server;
+
+use serde::Serialize;
+use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
+
+#[derive(Serialize, Clone, Debug)]
+struct DisplayInfo {
+    id: String,
+    name: String,
+    width: u32,
+    height: u32,
+    is_primary: bool,
+}
+
+#[tauri::command]
+fn get_displays(app: AppHandle) -> Vec<DisplayInfo> {
+    let mut out = Vec::new();
+    if let Ok(monitors) = app.available_monitors() {
+        for (i, m) in monitors.iter().enumerate() {
+            let size = m.size();
+            out.push(DisplayInfo {
+                id: format!("display_{i}"),
+                name: m.name().cloned().unwrap_or_else(|| format!("Monitor {}", i + 1)),
+                width: size.width,
+                height: size.height,
+                is_primary: i == 0,
+            });
+        }
+    }
+    out
+}
+
+#[tauri::command]
+fn server_info(info: State<server::ServerInfo>) -> server::ServerInfo {
+    info.inner().clone()
+}
+
+fn toggle_window(
+    app: &AppHandle,
+    label: &str,
+    url: &str,
+    title: &str,
+    monitor_index: Option<usize>,
+) -> Result<bool, String> {
+    if let Some(win) = app.get_webview_window(label) {
+        win.close().map_err(|e| e.to_string())?;
+        return Ok(false);
+    }
+
+    let win = WebviewWindowBuilder::new(app, label, WebviewUrl::App(url.into()))
+        .title(title)
+        .decorations(false)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    if let Some(idx) = monitor_index {
+        if let Ok(monitors) = app.available_monitors() {
+            if let Some(m) = monitors.get(idx) {
+                let _ = win.set_position(*m.position());
+                let _ = win.set_fullscreen(true);
+            }
+        }
+    }
+    Ok(true)
+}
+
+#[tauri::command]
+async fn toggle_audience_window(app: AppHandle, monitor_index: Option<usize>) -> Result<bool, String> {
+    toggle_window(&app, "audience", "audience.html", "OpenPresenter - Projeção", monitor_index)
+}
+
+#[tauri::command]
+async fn toggle_stage_window(app: AppHandle, monitor_index: Option<usize>) -> Result<bool, String> {
+    toggle_window(&app, "stage", "stage.html", "OpenPresenter - Retorno de Palco", monitor_index)
+}
+
+#[tauri::command]
+async fn search_online_lyrics(query: String) -> Result<Vec<server::OnlineLyricItem>, String> {
+    Ok(server::fetch_online_lyrics(&query).await)
+}
+
+fn main() {
+    tauri::Builder::default()
+        .setup(|app| {
+            let info = server::start(app.handle().clone())?;
+            println!(
+                "[OpenPresenter] celular: {}  |  OBS: {}",
+                info.remote_url, info.obs_url
+            );
+            app.manage(info);
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            get_displays,
+            server_info,
+            toggle_audience_window,
+            toggle_stage_window,
+            search_online_lyrics
+        ])
+        .run(tauri::generate_context!())
+        .expect("erro ao executar o OpenPresenter");
+}

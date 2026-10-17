@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenPresenter - Controle Remoto Mobile</title>
+  <link rel="stylesheet" href="/src/styles/main.css">
+  <style>
+    body {
+      padding: 16px;
+      overflow-y: auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .remote-live-card {
+      background: #111827;
+      border: 2px solid var(--live-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 0 16px var(--live-glow);
+    }
+    .big-nav-btn {
+      flex: 1;
+      height: 70px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div style="font-weight: 800; font-size: 1.2rem; color: #6366f1;">OpenPresenter Remote</div>
+    <span class="badge badge-verse">Ao Vivo</span>
+  </header>
+
+  <div class="remote-live-card">
+    <div style="font-size: 0.75rem; font-weight: 700; color: #f87171; text-transform: uppercase; margin-bottom: 4px;">NO AR AGORA</div>
+    <div id="remote-live-title" style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 8px;">Boas-Vindas</div>
+    <div id="remote-live-text" style="font-size: 0.95rem; color: #cbd5e1; white-space: pre-line; line-height: 1.4;">Sejam bem-vindos ao culto!</div>
+  </div>
+
+  <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+    <button id="btn-remote-prev" class="btn big-nav-btn" style="background: #1f2937;">◀ ANTERIOR</button>
+    <button id="btn-remote-next" class="btn btn-primary big-nav-btn">PRÓXIMO ▶</button>
+  </div>
+
+  <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+    <button id="btn-remote-clear" class="btn" style="flex: 1; justify-content: center; padding: 12px;">Limpar Texto</button>
+    <button id="btn-remote-blackout" class="btn" style="flex: 1; justify-content: center; padding: 12px; color: #f87171;">Blackout</button>
+  </div>
+
+  <div style="font-size: 0.85rem; font-weight: 700; color: #94a3b8; margin-bottom: 8px;">PRÓXIMO SLIDE:</div>
+  <div id="remote-next-text" style="padding: 12px; background: #1a1d26; border-radius: var(--radius-sm); font-size: 0.9rem; color: #94a3b8;">
+    Aguardando...
+  </div>
+
+  <script type="module" src="/src/ts/remote.ts"></script>
+</body>
+</html>

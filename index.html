@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenPresenter - Centro de Controle</title>
+  <link rel="stylesheet" href="/src/styles/main.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Top macOS Unified Navigation Bar -->
+    <header class="app-nav glass-header">
+      <!-- Left: Brand & Status -->
+      <div class="brand">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        <span class="brand-title">OpenPresenter</span>
+        <div class="status-pill-indicator">
+          <span class="status-dot-pulse"></span>
+          <span>Ao Vivo</span>
+        </div>
+      </div>
+
+      <!-- Center: Spotlight Search Bar -->
+      <div class="spotlight-bar">
+        <span style="font-size: 0.9rem; opacity: 0.6;">🔍</span>
+        <input type="text" id="quick-search-input" placeholder="Buscar hinos, letras na web ou passagens bíblicas (ex: jo 3 16)..." autocomplete="off">
+        <span class="spotlight-kbd">⌘K</span>
+      </div>
+
+      <!-- Right: Screen Menu & Panic Actions -->
+      <div class="nav-actions">
+        <!-- Direct Visual Bible Launcher -->
+        <button id="btn-top-bible-nav" class="btn" title="Abrir Navegador Bíblico Visual Completo (Atalho: F3)" style="color: #34d399; border-color: rgba(52, 211, 153, 0.35);">
+          <span>📖</span>
+          <span>Bíblia</span>
+        </button>
+
+        <!-- Screens Popover Trigger -->
+        <div class="screens-dropdown-wrapper">
+          <button id="btn-screens-menu" class="btn" title="Gerenciar Telas e Conexões">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+            <span>Telas</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          
+          <div id="popover-screens" class="macos-menu-popover" style="display: none;">
+            <button id="btn-open-audience" class="menu-item"><span style="font-size: 1.1rem;">📽️</span> Projetor do Público (F5)</button>
+            <button id="btn-open-stage" class="menu-item"><span style="font-size: 1.1rem;">🎸</span> Retorno de Palco (F6)</button>
+            <button id="btn-open-stream" class="menu-item"><span style="font-size: 1.1rem;">📡</span> Transmissão OBS (Stream)</button>
+            <button id="btn-open-remote" class="menu-item"><span style="font-size: 1.1rem;">📱</span> Controle no Celular (QR Code)</button>
+          </div>
+        </div>
+
+        <!-- Bible Version Selector -->
+        <div style="position: relative;">
+          <button id="btn-bible-pill" class="btn" title="Alternar tradução da Bíblia">
+            <span>📖</span>
+            <span id="label-active-bible" style="font-weight: 700; font-size: 0.75rem;">ACF</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div id="popover-bible-versions" class="macos-menu-popover" style="display: none; width: 200px;">
+            <div style="padding: 6px 10px; font-size: 0.7rem; font-weight: 700; color: #818cf8; border-bottom: 1px solid var(--border-subtle);">Traduções da Bíblia</div>
+            <div id="popover-bible-list"></div>
+            <div style="padding: 6px; border-top: 1px solid var(--border-subtle);">
+              <label for="input-bible-popover-file" class="menu-item" style="cursor: pointer; font-size: 0.72rem;">
+                <span>📂</span> Importar Bíblia (XML)
+              </label>
+              <input type="file" id="input-bible-popover-file" accept=".xml,.json" style="display: none;">
+            </div>
+          </div>
+        </div>
+
+        <div style="width: 1px; height: 22px; background: var(--border-subtle); margin: 0 4px;"></div>
+
+        <!-- Emergency / Panic Controls -->
+        <button id="btn-clear-text" class="btn btn-ghost" title="Ocultar texto da tela sem apagar fundo (Atalho: C / F2)">Limpar Texto</button>
+        <button id="btn-blackout" class="btn btn-ghost" title="Apagar todas as telas com tela preta (Atalho: B / F1)">Blackout</button>
+        <button id="btn-toggle-live" class="btn btn-live active" title="Alternar projeção ao vivo">
+          <span class="live-dot"></span>
+          AO VIVO
+        </button>
+      </div>
+    </header>
+
+    <!-- Main 3-Column Workspace -->
+    <main class="workspace">
+      <!-- Coluna 1: Culto de Hoje (Ordem do Culto) -->
+      <section class="column glass-panel">
+        <div class="panel-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: 700; color: #fff;">Culto de Hoje</span>
+            <span id="playlist-count-badge" style="font-size: 0.7rem; color: #64748b;">(4 itens)</span>
+          </div>
+          
+          <!-- Mode Toggle: 2 Cliques vs 1 Clique -->
+          <button id="btn-toggle-click-mode" class="pill-mode-btn active" title="Clique para alternar entre modo seguro (2 cliques: 1º engatilha na prévia, 2º projeta) ou modo direto">
+            🔒 2 Cliques (Engatilhar)
+          </button>
+          <input type="checkbox" id="toggle-two-click" checked style="display: none;">
+        </div>
+
+        <div class="panel-content">
+          <!-- Quick Search Live Dropdown -->
+          <div id="search-results-list" style="display: none; max-height: 150px; overflow-y: auto; margin-bottom: 6px;" class="glass-panel"></div>
+
+          <!-- Playlist Cards -->
+          <div id="playlist-container" style="display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto;"></div>
+
+          <!-- Add Item Primary Action -->
+          <button id="btn-add-item" class="btn-add-worship">
+            <span style="font-size: 1.2rem; font-weight: 300;">+</span>
+            <span>Adicionar ao Culto</span>
+          </button>
+          
+          <!-- Hidden compatibility buttons for existing code -->
+          <button id="btn-open-bible-nav" style="display: none;"></button>
+          <button id="btn-open-web-search" style="display: none;"></button>
+        </div>
+      </section>
+
+      <!-- Coluna 2: Grade de Slides (ProPresenter Style) -->
+      <section class="column glass-panel">
+        <div class="panel-header">
+          <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+            <span id="active-item-title" style="font-size: 1.05rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Selecione um hino ou passagem bíblica</span>
+            <span id="active-item-badge" class="slide-badge-pill slide-badge-verse" style="display: none;">MÚSICA</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button id="btn-prev-slide" class="btn" style="padding: 4px 10px;" title="Slide Anterior (Seta Esquerda)">◀</button>
+            <button id="btn-next-slide" class="btn" style="padding: 4px 10px;" title="Próximo Slide (Espaço / Seta Direita)">▶</button>
+          </div>
+        </div>
+
+        <!-- Staging Alert Banner (Feedback Imediato para o Operador) -->
+        <div id="staging-banner" class="staging-banner" style="display: none;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1rem;">🟡</span>
+            <span><b>ENGATILHADO (PRÉVIA):</b> <span id="staged-slide-name">Estrofe 1</span></span>
+          </div>
+          <button id="btn-fire-staged" class="btn btn-primary" style="padding: 3px 12px; font-size: 0.75rem;">🔴 Projetar Agora (Espaço)</button>
+        </div>
+        <span id="badge-staged-status" style="display: none !important;"></span>
+
+        <!-- Slides Matrix Grid -->
+        <div id="slide-matrix" class="slide-grid"></div>
+      </section>
+
+      <!-- Coluna 3: Monitor do Telão & Painel de Controle -->
+      <section class="column glass-panel">
+        <div class="panel-header">
+          <span style="font-weight: 700; color: #fff;">Monitor do Telão</span>
+          <span style="font-size: 0.7rem; color: #10b981; font-weight: 600;">● 60 FPS AO VIVO</span>
+        </div>
+
+        <div class="panel-content">
+          <!-- Audience Projector Monitor Screen -->
+          <div class="monitor-bezel">
+            <canvas id="canvas-audience-preview" class="monitor-canvas" width="640" height="360"></canvas>
+          </div>
+
+          <!-- Big Friendly Navigation Buttons for Church Volunteers -->
+          <div class="quick-nav-bar">
+            <button id="btn-quick-prev" class="btn btn-big-nav" title="Voltar slide anterior">
+              ◀ Anterior
+            </button>
+            <button id="btn-quick-next" class="btn btn-primary btn-big-nav" title="Avançar para o próximo slide (Você também pode apertar a barra de ESPAÇO no teclado)">
+              Próximo (Espaço) ▶
+            </button>
+          </div>
+
+          <!-- Tabbed Drawer (OBS, Avisos, Cifras) -->
+          <div class="drawer-tabs">
+            <button id="tab-drawer-obs" class="drawer-tab-btn active">📺 OBS Stream</button>
+            <button id="tab-drawer-alert" class="drawer-tab-btn">💬 Avisos Rápidos</button>
+            <button id="tab-drawer-chords" class="drawer-tab-btn">🎸 Tom / Cifras</button>
+          </div>
+
+          <!-- Pane 1: OBS Live Stream Settings -->
+          <div id="pane-drawer-obs" style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-subtle);">
+              <canvas id="canvas-stream-preview" style="width: 100%; height: 100%; object-fit: contain;" width="640" height="360"></canvas>
+            </div>
+            
+            <div style="display: flex; gap: 6px;">
+              <select id="select-obs-theme" class="btn" style="flex: 1; padding: 5px 8px; font-size: 0.75rem;">
+                <option value="glass-pill">Estilo Glass Pill (Moderno)</option>
+                <option value="clean-minimal">Minimalista Sem Fundo</option>
+                <option value="full-width">Barra de TV (Transmissão)</option>
+              </select>
+              <label for="input-church-logo" class="btn" style="padding: 5px 10px; font-size: 0.75rem; cursor: pointer;" title="Carregar Logotipo da Igreja">
+                📷 Logo
+              </label>
+              <input type="file" id="input-church-logo" accept="image/*" style="display: none;">
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-secondary); cursor: pointer;">
+                <input type="checkbox" id="toggle-low-spec">
+                <span>Modo PC Antigo (0% GPU)</span>
+              </label>
+              <button id="btn-show-qr-wifi" class="btn" style="padding: 2px 8px; font-size: 0.7rem; color: #818cf8;">
+                📱 QR Celular
+              </button>
+            </div>
+          </div>
+
+          <!-- Pane 2: Avisos Rápidos -->
+          <div id="pane-drawer-alert" style="display: none; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.75rem; color: var(--text-secondary);">Contagem Regressiva:</span>
+              <div style="display: flex; gap: 4px;">
+                <button id="btn-countdown-5m" class="btn" style="padding: 2px 8px; font-size: 0.7rem;">⏱ 5 min</button>
+                <button id="btn-countdown-3m" class="btn" style="padding: 2px 8px; font-size: 0.7rem;">⏱ 3 min</button>
+              </div>
+            </div>
+            
+            <textarea id="alert-input" placeholder="Ex: Crianças do maternal favor comparecer..." style="width: 100%; height: 70px; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px; color: #fff; font-size: 0.82rem; outline: none; resize: none;"></textarea>
+            
+            <div style="display: flex; gap: 6px;">
+              <button id="btn-send-alert" class="btn btn-primary" style="flex: 1; justify-content: center;">📢 Exibir no Telão</button>
+              <button id="btn-clear-alert" class="btn btn-ghost" style="padding: 0 12px;">Limpar</button>
+            </div>
+          </div>
+
+          <!-- Pane 3: Tom e Cifras (Palco) -->
+          <div id="pane-drawer-chords" style="display: none; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-tertiary); border-radius: 8px;">
+              <span style="font-size: 0.8rem; color: var(--text-secondary);">Tom no Retorno dos Músicos:</span>
+              <span id="label-current-key" style="font-family: monospace; font-size: 0.95rem; font-weight: 700; color: var(--stage-chord);">Original (0)</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button id="btn-key-down" class="btn" style="flex: 1; justify-content: center; padding: 8px;">−1 Semitom</button>
+              <button id="btn-key-reset" class="btn" style="flex: 1; justify-content: center; padding: 8px;">Restaurar</button>
+              <button id="btn-key-up" class="btn" style="flex: 1; justify-content: center; padding: 8px;">+1 Semitom</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer Status Bar -->
+    <footer class="status-bar">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="status-dot"></span>
+        <span>Sistema Operacional: Linux Nativo (Tauri v2 + WebKitGTK)</span>
+      </div>
+      <div>
+        <span>Atalhos: <b>Espaço</b> = Próximo | <b>Seta Esquerda</b> = Anterior | <b>B</b> = Blackout | <b>C</b> = Limpar</span>
+      </div>
+      <div>
+        <span id="status-clock" style="font-family: monospace; font-weight: 600;">00:00:00</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- QR Code Modal para Celular -->
+  <div id="modal-qr" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="glass-panel" style="background: #111827; padding: 24px; border-radius: 16px; width: 340px; text-align: center; border: 1px solid var(--border-accent);">
+      <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 8px;">Controle Remoto no Celular</h3>
+      <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px;">Conecte o celular ao mesmo Wi-Fi e aponte a câmera para controlar os slides:</p>
+      <div style="background: #fff; padding: 12px; border-radius: 12px; display: inline-block; margin-bottom: 16px;">
+        <div id="qr-image" style="width: 200px; height: 200px;"></div>
+      </div>
+      <div id="qr-url-text" style="font-family: monospace; font-size: 0.75rem; color: #818cf8; margin-bottom: 16px; word-break: break-all;"></div>
+      <button id="btn-close-qr" class="btn btn-primary" style="width: 100%; justify-content: center;">Fechar</button>
+    </div>
+  </div>
+
+  <!-- Modal Adicionar Item ao Culto (Bíblia, Harpa, Letras Web, Nova Letra) -->
+  <div id="modal-add-item" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); backdrop-filter: blur(10px); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+    <div class="glass-panel" style="background: #111827; border-radius: 16px; width: 840px; max-width: 95vw; max-height: 92vh; display: flex; flex-direction: column; border: 1px solid var(--border-accent); overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.8);">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-secondary);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem;">✨</span>
+          <span style="font-weight: 700; font-size: 1.05rem; color: #fff;">Adicionar à Ordem do Culto</span>
+        </div>
+        <button id="btn-close-add-modal" class="btn" style="padding: 4px 10px; font-size: 1.2rem; line-height: 1;">&times;</button>
+      </div>
+
+      <!-- Tabs Navigation -->
+      <div style="display: flex; gap: 6px; padding: 8px 16px; background: var(--bg-tertiary); border-bottom: 1px solid var(--border-subtle);">
+        <button id="tab-btn-bible" class="btn active-tab-btn" style="flex: 1; justify-content: center; font-size: 0.82rem; font-weight: 600;">📖 Bíblia Sagrada</button>
+        <button id="tab-btn-online" class="btn" style="flex: 1; justify-content: center; font-size: 0.82rem; font-weight: 600;">🌐 Letras na Web</button>
+        <button id="tab-btn-harpa" class="btn" style="flex: 1; justify-content: center; font-size: 0.82rem; font-weight: 600;">🎵 Harpa Cristã (640)</button>
+        <button id="tab-btn-custom" class="btn" style="flex: 1; justify-content: center; font-size: 0.82rem; font-weight: 600;">✍️ Nova Letra</button>
+        <button id="tab-btn-import" class="btn" style="flex: 1; justify-content: center; font-size: 0.82rem; font-weight: 600;">📂 Importar Arquivo</button>
+      </div>
+
+      <div style="padding: 16px; flex: 1; overflow-y: auto;">
+        <!-- Tab 1: Bíblia Sagrada -->
+        <div id="tab-pane-bible">
+          <div style="margin-bottom: 12px;">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="input-bible-quick" placeholder="Busca rápida (ex: jo 3 16, sl 23, rm 8 28)..." style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 0.9rem; outline: none;">
+              <button id="btn-bible-search" class="btn btn-primary" style="padding: 0 18px;">Localizar</button>
+              <button id="btn-launch-visual-nav" class="btn" style="color: #34d399; border-color: rgba(52, 211, 153, 0.4);" title="Abrir seletor visual por livro, capítulo e versículo">📖 Navegador Visual</button>
+            </div>
+          </div>
+
+          <!-- Dropdowns selectors -->
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <div>
+              <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 2px;">Livro</label>
+              <select id="select-bible-book" class="btn" style="width: 100%; padding: 6px 8px; font-size: 0.82rem; background: var(--bg-primary);"></select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 2px;">Capítulo</label>
+              <input type="number" id="input-bible-chapter" min="1" value="1" style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px 8px; color: #fff; font-size: 0.82rem; outline: none;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 2px;">Vers. Início</label>
+              <input type="number" id="input-bible-start" min="1" value="1" style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px 8px; color: #fff; font-size: 0.82rem; outline: none;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 2px;">Vers. Fim</label>
+              <input type="number" id="input-bible-end" min="1" value="1" style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px 8px; color: #fff; font-size: 0.82rem; outline: none;">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Pré-visualização do(s) Versículo(s)</label>
+            <div id="bible-preview-box" style="background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; min-height: 100px; max-height: 180px; overflow-y: auto; font-size: 0.9rem; line-height: 1.5; color: #e2e8f0;">
+              Digite uma referência ou selecione acima para pré-visualizar.
+            </div>
+          </div>
+
+          <button id="btn-add-bible-to-playlist" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; font-weight: 600;">Adicionar Versículos ao Culto</button>
+        </div>
+
+        <!-- Tab 2: Letras Online -->
+        <div id="tab-pane-online" style="display: none;">
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Buscar qualquer música na internet (Pesquisa em Milhares de Louvores Nacionais e Internacionais)</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="input-online-search" placeholder="Ex: Bondade de Deus, Vitorioso És, A Casa é Sua, Me Atraiu, Fernandinho..." style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 0.9rem; outline: none;">
+              <button id="btn-do-online-search" class="btn btn-primary" style="padding: 0 18px;">Buscar</button>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div id="online-results-list" style="background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; height: 230px; overflow-y: auto;">
+              <div style="padding: 16px; font-size: 0.8rem; color: #64748b; text-align: center;">Digite o nome da música acima e clique em Buscar.</div>
+            </div>
+            <div id="online-lyrics-preview" style="background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; height: 230px; overflow-y: auto; font-size: 0.8rem; line-height: 1.45; color: #cbd5e1;">
+              Selecione uma música da lista para ver a letra dividida em estrofes.
+            </div>
+          </div>
+
+          <button id="btn-add-online-to-playlist" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; font-weight: 600;">Adicionar Música à Ordem do Culto</button>
+        </div>
+
+        <!-- Tab 3: Harpa Cristã -->
+        <div id="tab-pane-harpa" style="display: none;">
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Buscar nos 640 Hinos da Harpa Cristã (Offline)</label>
+            <input type="text" id="input-harpa-search" placeholder="Digite o número do hino (ex: 15, 545) ou parte do título..." style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 0.9rem; outline: none;">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div id="harpa-results-list" style="background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; height: 210px; overflow-y: auto;"></div>
+            <div id="harpa-lyrics-preview" style="background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; height: 210px; overflow-y: auto; font-size: 0.8rem; line-height: 1.45; color: #cbd5e1;">
+              Selecione um hino à esquerda para ver as estrofes e refrão.
+            </div>
+          </div>
+
+          <button id="btn-add-harpa-to-playlist" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; font-weight: 600;">Adicionar Hino à Ordem do Culto</button>
+        </div>
+
+        <!-- Tab 4: Criar Letra Customizada -->
+        <div id="tab-pane-custom" style="display: none;">
+          <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr; gap: 8px; margin-bottom: 10px;">
+            <div>
+              <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 2px;">Título da Música</label>
+              <input type="text" id="input-custom-title" placeholder="Ex: Bondade de Deus" style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px 8px; color: #fff; font-size: 0.82rem; outline: none;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 2px;">Artista / Ministério</label>
+              <input type="text" id="input-custom-artist" placeholder="Ex: Isaias Saad" style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px 8px; color: #fff; font-size: 0.82rem; outline: none;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 2px;">Tom</label>
+              <select id="select-custom-key" class="btn" style="width: 100%; padding: 6px 8px; font-size: 0.82rem;">
+                <option value="C">C (Dó)</option>
+                <option value="D">D (Ré)</option>
+                <option value="E">E (Mi)</option>
+                <option value="F">F (Fá)</option>
+                <option value="G" selected>G (Sol)</option>
+                <option value="A">A (Lá)</option>
+                <option value="B">B (Si)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 0.72rem; color: #94a3b8; margin-bottom: 4px;">Cole a Letra Abaixo (Deixe uma linha em branco entre cada estrofe para separar os slides automaticamente):</label>
+            <textarea id="textarea-custom-lyrics" placeholder="Primeira estrofe...&#10;&#10;Coro da música...&#10;&#10;Segunda estrofe..." style="width: 100%; height: 160px; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px; color: #fff; font-size: 0.82rem; outline: none; resize: vertical; line-height: 1.4;"></textarea>
+          </div>
+
+          <button id="btn-save-custom-song" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; font-weight: 600;">Salvar e Adicionar ao Culto</button>
+        </div>
+
+        <!-- Tab 5: Importar Arquivos (Holyrics, ProPresenter, OpenLP) -->
+        <div id="tab-pane-import" style="display: none;">
+          <div style="padding: 24px; text-align: center; border: 2px dashed var(--border-subtle); border-radius: 12px; margin-bottom: 16px;">
+            <span style="font-size: 2rem; display: block; margin-bottom: 8px;">📂</span>
+            <div style="font-weight: 700; color: #f8fafc; margin-bottom: 4px;">Importar Hinos e Músicas de Outros Softwares</div>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px;">Suporte nativo a ProPresenter (.pro4, .pro5, .pro6), OpenLyrics (.xml), Holyrics (.hly) e CCLI.</p>
+            <label for="input-file-import" class="btn btn-primary" style="padding: 8px 20px; cursor: pointer;">
+              Selecionar Arquivo no Computador
+            </label>
+            <input type="file" id="input-file-import" accept=".pro,.pro4,.pro5,.pro6,.xml,.json,.txt" style="display: none;">
+          </div>
+          <div id="import-status-box" style="font-size: 0.8rem; color: #94a3b8; text-align: center;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Seletor Visual da Bíblia (O mais intuitivo do mundo) -->
+  <div id="modal-bible-navigator" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 1500; align-items: center; justify-content: center; padding: 20px;">
+    <div class="glass-panel" style="background: #111827; border-radius: 16px; width: 940px; max-width: 96vw; max-height: 90vh; display: flex; flex-direction: column; border: 1px solid var(--border-accent); overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.8);">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-secondary);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.2rem;">📖</span>
+          <span style="font-weight: 700; font-size: 1.05rem; color: #fff;">Navegador Bíblico Visual</span>
+          <span id="nav-active-version-badge" class="slide-badge-pill slide-badge-verse">ACF</span>
+        </div>
+        <button id="btn-close-bible-nav" class="btn" style="padding: 4px 10px; font-size: 1.2rem; line-height: 1;">&times;</button>
+      </div>
+
+      <!-- 3 Columns: Livros -> Capítulos -> Versículos -->
+      <div class="bible-nav-container" style="padding: 14px; flex: 1; overflow: hidden;">
+        <!-- Col 1: Livros (AT e NT) -->
+        <div class="bible-nav-col">
+          <div style="font-size: 0.7rem; font-weight: 700; color: #818cf8; margin-bottom: 6px; padding: 4px 6px;">ANTIGO TESTAMENTO (39)</div>
+          <div id="nav-books-at" style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;"></div>
+          <div style="font-size: 0.7rem; font-weight: 700; color: #34d399; margin-bottom: 6px; padding: 4px 6px;">NOVO TESTAMENTO (27)</div>
+          <div id="nav-books-nt" style="display: flex; flex-direction: column; gap: 2px;"></div>
+        </div>
+
+        <!-- Col 2: Capítulos -->
+        <div class="bible-nav-col">
+          <div id="nav-selected-book-title" style="font-size: 0.78rem; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; text-align: center;">Capítulos</div>
+          <div id="nav-chapters-grid" class="chapter-grid"></div>
+        </div>
+
+        <!-- Col 3: Versículos -->
+        <div class="bible-nav-col" style="display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div id="nav-verses-header" style="font-size: 0.82rem; font-weight: 700; color: #10b981;">Versículos</div>
+            <button id="btn-nav-select-all" class="btn" style="padding: 2px 8px; font-size: 0.7rem;">Capítulo Inteiro</button>
+          </div>
+          <div id="nav-verses-list" style="flex: 1; overflow-y: auto;">
+            <div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.8rem;">Selecione um livro e capítulo ao lado.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Action Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-top: 1px solid var(--border-subtle); background: var(--bg-secondary);">
+        <div id="nav-selected-summary" style="font-size: 0.85rem; color: #94a3b8; font-weight: 500;">Nenhum versículo selecionado</div>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-nav-stage" class="btn" style="padding: 8px 16px; font-weight: 600; color: #f59e0b; border-color: #f59e0b;">🟡 Engatilhar (Prévia)</button>
+          <button id="btn-nav-project-now" class="btn btn-primary" style="padding: 8px 18px; font-weight: 700; background: #10b981; border-color: #10b981;">🔴 Projetar Agora</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/ts/main.ts"></script>
+</body>
+</html>

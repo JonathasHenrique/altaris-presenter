@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for the application",
+  "windows": ["main", "audience", "stage"],
+  "permissions": [
+    "core:default",
+    "shell:default"
+  ]
+}
