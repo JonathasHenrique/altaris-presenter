@@ -32,6 +32,21 @@
         </div>
       </div>
 
+      <!-- Menu: Visualizar -->
+      <div class="menu-root" id="m-root-view">
+        <span class="menu-title">Visualizar</span>
+        <div class="macos-dropdown" id="m-drop-view" style="display: none; min-width: 240px;">
+          <div style="padding: 4px 12px; font-size: 0.7rem; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em;">⏱ Relógio no Telão</div>
+          <button class="menu-item menu-clock-opt" data-clock="none"><span class="item-icon clock-check" data-for="none">✓</span> Desativado (Ocultar)</button>
+          <button class="menu-item menu-clock-opt" data-clock="topRight"><span class="item-icon clock-check" data-for="topRight"> </span> Canto Superior Direito</button>
+          <button class="menu-item menu-clock-opt" data-clock="bottomRight"><span class="item-icon clock-check" data-for="bottomRight"> </span> Canto Inferior Direito</button>
+          <button class="menu-item menu-clock-opt" data-clock="bottomLeft"><span class="item-icon clock-check" data-for="bottomLeft"> </span> Canto Inferior Esquerdo</button>
+          <hr class="menu-divider">
+          <button class="menu-item" id="mi-toggle-chords"><span class="item-icon">🎸</span> Cifras e Tom para Músicos</button>
+          <button class="menu-item" id="mi-toggle-alerts"><span class="item-icon">💬</span> Painel de Avisos Rápidos</button>
+        </div>
+      </div>
+
       <!-- Menu: Bíblia -->
       <div class="menu-root" id="m-root-bible">
         <span class="menu-title">Bíblia</span>
@@ -59,10 +74,13 @@
       <!-- Menu: Telas -->
       <div class="menu-root" id="m-root-screens">
         <span class="menu-title">Telas</span>
-        <div class="macos-dropdown" id="m-drop-screens" style="display: none;">
+        <div class="macos-dropdown" id="m-drop-screens" style="display: none; min-width: 260px;">
           <button class="menu-item" id="mi-screen-audience"><span class="item-icon">📽️</span> Projetor do Público (Telão) <span class="shortcut">F5</span></button>
           <button class="menu-item" id="mi-screen-stage"><span class="item-icon">🎸</span> Retorno de Palco <span class="shortcut">F6</span></button>
           <button class="menu-item" id="mi-screen-obs"><span class="item-icon">📡</span> Transmissão OBS (Stream)</button>
+          <hr class="menu-divider">
+          <button class="menu-item" id="mi-obs-advanced"><span class="item-icon">⚙️</span> Configurações Avançadas do OBS Web...</button>
+          <button class="menu-item" id="mi-screen-remote"><span class="item-icon">📱</span> Controle Remoto no Celular (QR Code)...</button>
         </div>
       </div>
 
@@ -76,32 +94,15 @@
       </div>
     </nav>
 
-    <!-- 2. Main macOS Unified Toolbar -->
+    <!-- 2. Main Safari / macOS Unified Toolbar -->
     <header class="app-nav glass-header">
-      <!-- Left: Brand & Quick Direct Action Pills -->
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <div class="brand">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-          </svg>
-          <span class="brand-title">OpenPresenter</span>
-        </div>
-
-        <!-- Direct Action Buttons (Explicit & Unmistakable) -->
-        <button id="btn-top-bible-nav" class="btn" title="Abrir Navegador Bíblico Visual Completo (Atalho: F3)" style="color: #34d399; border-color: rgba(52, 211, 153, 0.35); font-weight: 600;">
-          <span>📖</span>
-          <span>Bíblia</span>
-        </button>
-
-        <button id="btn-top-web-search" class="btn" title="Buscar Louvores Online na Web (Atalho: ⌘L)" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); font-weight: 600;">
-          <span>🌐</span>
-          <span>Letras na Web</span>
-        </button>
-
-        <button id="btn-top-remote-qr" class="btn" title="Controle Remoto no Celular via Wi-Fi" style="color: #a5b4fc; border-color: rgba(165, 180, 252, 0.35); font-weight: 600;">
-          <span>📱</span>
-          <span>Celular</span>
-        </button>
+      <!-- Left: Clean Brand Logo -->
+      <div class="brand" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        <span class="brand-title">OpenPresenter</span>
+        <span class="brand-badge" style="font-size: 0.65rem; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 2px 6px; border-radius: 6px; font-weight: 700;">PRO 7</span>
       </div>
 
       <!-- Center: Spotlight Search Bar -->
@@ -124,10 +125,13 @@
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           
-          <div id="popover-screens" class="macos-menu-popover" style="display: none;">
+          <div id="popover-screens" class="macos-menu-popover" style="display: none; width: 260px;">
             <button id="btn-open-audience" class="menu-item"><span style="font-size: 1.1rem;">📽️</span> Projetor do Público (F5)</button>
             <button id="btn-open-stage" class="menu-item"><span style="font-size: 1.1rem;">🎸</span> Retorno de Palco (F6)</button>
             <button id="btn-open-stream" class="menu-item"><span style="font-size: 1.1rem;">📡</span> Transmissão OBS (Stream)</button>
+            <hr class="menu-divider">
+            <button id="btn-open-obs-settings" class="menu-item"><span style="font-size: 1.1rem;">⚙️</span> Configurações Avançadas OBS...</button>
+            <button id="btn-open-remote" class="menu-item"><span style="font-size: 1.1rem;">📱</span> Controle Remoto Celular (QR Code)...</button>
           </div>
         </div>
 
@@ -283,6 +287,9 @@
                 <input type="checkbox" id="toggle-low-spec">
                 <span>Modo PC Antigo (0% GPU)</span>
               </label>
+              <button id="btn-drawer-obs-advanced" class="btn" style="padding: 3px 8px; font-size: 0.7rem; color: #38bdf8; border-color: rgba(56, 189, 248, 0.35);">
+                ⚙️ Ajustes OBS
+              </button>
             </div>
           </div>
 
@@ -410,15 +417,64 @@
           </div>
         </div>
 
-        <!-- Tab: OBS Stream -->
+        <!-- Tab: OBS Stream (Configurações Avançadas) -->
         <div class="prefs-section" id="prefs-pane-obs" style="display: none;">
           <div class="prefs-group">
+            <div style="font-weight: 700; font-size: 0.95rem; color: #fff; margin-bottom: 4px;">Configurações Avançadas de Transmissão (OBS Web / vMix)</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 16px;">Camada de sobreposição com canal alfa transparente e renderização via GPU a 60 FPS.</div>
+
+            <div class="prefs-row">
+              <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Endereço da Fonte de Navegador (Browser Source)</div>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Cole exatamente este link no campo "URL" da fonte no OBS:</div>
+                <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                  <input type="text" id="obs-browser-url-input" readonly value="http://localhost:7878/stream.html" style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-subtle); color: #38bdf8; font-family: monospace; font-size: 0.82rem; padding: 6px 10px; border-radius: 6px; width: 280px;">
+                  <button id="btn-copy-obs-url" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.78rem;">📋 Copiar URL</button>
+                  <button id="btn-test-obs-url" class="btn" style="padding: 6px 12px; font-size: 0.78rem;">🌐 Testar</button>
+                </div>
+              </div>
+            </div>
+
             <div class="prefs-row">
               <div>
-                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Endereço do Navegador no OBS</div>
-                <div style="font-size: 0.75rem; color: #94a3b8;">Adicione como Fonte de Navegador (Browser Source) no OBS Studio</div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Tema Visual do Lower Third no OBS</div>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Estilo da barra de texto projetada sobre a câmera</div>
               </div>
-              <div style="font-family: monospace; font-size: 0.8rem; color: #38bdf8;">http://localhost:7878/stream.html</div>
+              <select id="pref-select-obs-theme" class="btn" style="padding: 6px 10px;">
+                <option value="glass-pill">Pílula Glassmorphism Flutuante</option>
+                <option value="clean-minimal">Minimalista com Contorno Forte (Sem Fundo)</option>
+                <option value="full-width">Faixa Inferior Completa (Lower Third Largo)</option>
+              </select>
+            </div>
+
+            <div class="prefs-row">
+              <div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Transparência do Fundo (Alpha Channel)</div>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Fundo transparente para não tampar a filmagem dos pregadores/louvor</div>
+              </div>
+              <span style="font-size: 0.75rem; font-weight: 700; color: #10b981; background: rgba(16,185,129,0.15); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(16,185,129,0.3);">✓ 100% Transparente</span>
+            </div>
+
+            <div class="prefs-row">
+              <div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Logotipo da Igreja no OBS</div>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Aparecerá automaticamente na lateral da faixa no OBS</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <label for="input-obs-logo-upload" class="btn" style="cursor: pointer; font-size: 0.78rem;">📁 Escolher Imagem (PNG)</label>
+                <input type="file" id="input-obs-logo-upload" accept="image/*" style="display: none;">
+                <button id="btn-obs-remove-logo" class="btn btn-ghost" style="font-size: 0.75rem; color: #ef4444;">Remover</button>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); border-radius: 8px;">
+              <div style="font-weight: 700; font-size: 0.8rem; color: #818cf8; margin-bottom: 6px;">💡 Configuração Ideal Recomendada no OBS Studio:</div>
+              <ul style="font-size: 0.75rem; color: #94a3b8; line-height: 1.5; padding-left: 18px; margin: 0;">
+                <li>No OBS: Adicione Fonte <b>Navegador (Browser Source)</b> e cole a URL acima</li>
+                <li>Largura: <b>1920</b> | Altura: <b>1080</b></li>
+                <li>Taxa de FPS: <b>60</b></li>
+                <li>Marque a opção: <i>"Atualizar o navegador quando a cena se tornar ativa"</i></li>
+              </ul>
             </div>
           </div>
         </div>

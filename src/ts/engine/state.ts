@@ -34,6 +34,7 @@ export interface AppState {
   isLogo: boolean;
   churchLogo: string | null;
   obsTheme: "glass-pill" | "clean-minimal" | "full-width" | "bible-box";
+  clockPosition: "none" | "topRight" | "bottomRight" | "bottomLeft";
   lowSpecMode: boolean;
   alertMessage: string;
   alertCountdown: number | null;
@@ -61,6 +62,7 @@ const DEFAULT_STATE: AppState = {
   isLogo: false,
   churchLogo: null,
   obsTheme: "glass-pill",
+  clockPosition: "none",
   lowSpecMode: false,
   alertMessage: "",
   alertCountdown: null,

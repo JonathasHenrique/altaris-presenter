@@ -15,6 +15,7 @@ store.subscribe((state) => {
   compositor.setOptions({
     isBlackout: state.isBlackout || !state.isLive,
     isClearText: state.isClearText,
-    alertText: state.alertMessage
+    alertText: state.alertMessage,
+    clockPosition: state.clockPosition
   });
 });

@@ -13,6 +13,7 @@ export interface RenderOptions {
   obsTheme?: "glass-pill" | "clean-minimal" | "full-width" | "bible-box";
   churchLogo?: string | null;
   lowSpecMode?: boolean;
+  clockPosition?: "none" | "topRight" | "bottomRight" | "bottomLeft";
 }
 
 const VW = 1920;
@@ -145,6 +146,10 @@ export class SlideCompositor {
     }
 
     if (this.options.alertText) this.drawAlertBanner(this.options.alertText);
+
+    if (this.options.clockPosition && this.options.clockPosition !== "none") {
+      this.drawClock(this.options.clockPosition);
+    }
   }
 
   private drawBackground() {
@@ -371,6 +376,61 @@ export class SlideCompositor {
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
     ctx.fillText(`AVISO: ${alert}`, VW / 2, VH - 24);
+    ctx.restore();
+  }
+
+  private drawClock(pos: "topRight" | "bottomRight" | "bottomLeft") {
+    const ctx = this.ctx;
+    ctx.save();
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+    ctx.font = "700 36px monospace";
+    const textW = ctx.measureText(timeStr).width;
+    const pw = textW + 56;
+    const ph = 58;
+
+    let px = VW - pw - 60;
+    let py = 50;
+
+    if (pos === "bottomRight") {
+      px = VW - pw - 60;
+      py = VH - ph - 60;
+    } else if (pos === "bottomLeft") {
+      px = 60;
+      py = VH - ph - 60;
+    } else if (pos === "topRight") {
+      px = VW - pw - 60;
+      py = 50;
+    }
+
+    // Glass pill background
+    ctx.fillStyle = "rgba(10, 12, 18, 0.78)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.16)";
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = "rgba(0, 0, 0, 0.6)";
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.roundRect(px, py, pw, ph, 29);
+    ctx.fill();
+    ctx.stroke();
+
+    // Subtle emerald indicator dot (live clock)
+    ctx.fillStyle = "#10b981";
+    ctx.shadowColor = "rgba(16, 185, 129, 0.6)";
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(px + 24, py + ph / 2, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Digital time text
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+    ctx.shadowBlur = 6;
+    ctx.fillText(timeStr, px + 38, py + ph / 2 + 1);
+
     ctx.restore();
   }
 }

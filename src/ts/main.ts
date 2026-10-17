@@ -1235,7 +1235,8 @@ store.subscribe((state) => {
   audiencePreview.setOptions({
     isBlackout: state.isBlackout || !state.isLive,
     isClearText: state.isClearText,
-    alertText: state.alertMessage
+    alertText: state.alertMessage,
+    clockPosition: state.clockPosition
   });
 
   streamPreview.setSlide(state.currentSlide);
@@ -1251,6 +1252,15 @@ async function bootstrap() {
   await Promise.all([BibleEngine.init(), SongEngine.init()]);
   labelActiveBible.textContent = BibleEngine.getActiveVersion().toUpperCase();
   initPlaylist();
+  
+  // Resolve real IP for OBS Browser Source
+  getServerInfo().then(info => {
+    if (info) {
+      const input = document.getElementById("obs-browser-url-input") as HTMLInputElement;
+      if (input) input.value = `http://${info.ip}:${info.port}/stream.html`;
+    }
+  });
+
   console.log("OpenPresenter Control Center initialized with macOS Pill, Staging & Online Search!");
 }
 
@@ -1484,6 +1494,89 @@ document.getElementById("mi-screen-obs")?.addEventListener("click", async () => 
   document.getElementById("btn-open-stream")?.click();
 });
 
+document.getElementById("mi-obs-advanced")?.addEventListener("click", () => {
+  closeAllMenus();
+  openPreferences("obs");
+});
+
+document.getElementById("btn-open-obs-settings")?.addEventListener("click", () => {
+  if (popoverScreens) popoverScreens.style.display = "none";
+  openPreferences("obs");
+});
+
+document.getElementById("mi-screen-remote")?.addEventListener("click", () => {
+  closeAllMenus();
+  showQrModal();
+});
+
+document.getElementById("btn-open-remote")?.addEventListener("click", () => {
+  if (popoverScreens) popoverScreens.style.display = "none";
+  showQrModal();
+});
+
+// Clock on Projection Screen Options
+document.querySelectorAll(".menu-clock-opt").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const clockPos = btn.getAttribute("data-clock") as "none" | "topRight" | "bottomRight" | "bottomLeft";
+    closeAllMenus();
+    store.setState({ clockPosition: clockPos });
+    document.querySelectorAll(".clock-check").forEach((span) => {
+      const forPos = span.getAttribute("data-for");
+      span.textContent = forPos === clockPos ? "✓" : " ";
+    });
+  });
+});
+
+document.getElementById("mi-toggle-chords")?.addEventListener("click", () => {
+  closeAllMenus();
+  switchDrawerTab("chords");
+});
+
+document.getElementById("mi-toggle-alerts")?.addEventListener("click", () => {
+  closeAllMenus();
+  switchDrawerTab("alert");
+});
+
+// Advanced OBS Settings in Preferences
+const btnCopyObsUrl = document.getElementById("btn-copy-obs-url");
+btnCopyObsUrl?.addEventListener("click", () => {
+  const input = document.getElementById("obs-browser-url-input") as HTMLInputElement;
+  if (input) {
+    navigator.clipboard.writeText(input.value);
+    const orig = btnCopyObsUrl.textContent;
+    btnCopyObsUrl.textContent = "✓ Copiado!";
+    setTimeout(() => {
+      btnCopyObsUrl.textContent = orig;
+    }, 2000);
+  }
+});
+
+document.getElementById("btn-test-obs-url")?.addEventListener("click", () => {
+  window.open("http://localhost:7878/stream.html", "_blank");
+});
+
+const prefSelectObsTheme = document.getElementById("pref-select-obs-theme") as HTMLSelectElement;
+prefSelectObsTheme?.addEventListener("change", () => {
+  store.setState({ obsTheme: prefSelectObsTheme.value as any });
+});
+
+const inputObsLogoUpload = document.getElementById("input-obs-logo-upload") as HTMLInputElement;
+inputObsLogoUpload?.addEventListener("change", () => {
+  if (inputObsLogoUpload.files && inputObsLogoUpload.files[0]) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      store.setState({ churchLogo: base64 });
+    };
+    reader.readAsDataURL(inputObsLogoUpload.files[0]);
+  }
+});
+
+document.getElementById("btn-obs-remove-logo")?.addEventListener("click", () => {
+  store.setState({ churchLogo: null });
+  alert("Logotipo do OBS removido.");
+});
+
 // ==========================================
 // Direct Visible Top Bar Action Buttons
 // ==========================================
@@ -1636,4 +1729,8 @@ btnClosePrefs?.addEventListener("click", () => {
 
 modalPreferences?.addEventListener("click", (e) => {
   if (e.target === modalPreferences) modalPreferences.style.display = "none";
+});
+
+document.getElementById("btn-drawer-obs-advanced")?.addEventListener("click", () => {
+  openPreferences("obs");
 });
