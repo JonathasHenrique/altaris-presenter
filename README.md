@@ -36,10 +36,9 @@ Zero travamentos, consumo de memória inferior a 50MB de RAM e controle total a 
 
 | Sistema Operacional | Formato | Arquitetura | Link de Download |
 | :--- | :--- | :--- | :--- |
-| **Linux (Ubuntu, Debian, Mint)** | `.deb` | x86_64 | [Baixar v1.0.0 (.deb)](https://github.com/JonathasHenrique/altaris-presenter/releases/latest) |
 | **Linux (Universal)** | `.AppImage` | x86_64 | [Baixar v1.0.0 (.AppImage)](https://github.com/JonathasHenrique/altaris-presenter/releases/latest) |
-| **Linux (Fedora, RHEL)** | `.rpm` | x86_64 | [Baixar v1.0.0 (.rpm)](https://github.com/JonathasHenrique/altaris-presenter/releases/latest) |
-| **Windows** | Instalador `.msi` / `.exe` | 64-bit | [Baixar v1.0.0 (.exe)](https://github.com/JonathasHenrique/altaris-presenter/releases/latest) |
+| **Linux (Flatpak)** | `.flatpak` / `.flatpakref` | x86_64 | [Baixar v1.0.0 (Flatpak)](https://github.com/JonathasHenrique/altaris-presenter/releases/latest) |
+| **Windows** | Instalador `.exe` | 64-bit | [Baixar v1.0.0 (.exe)](https://github.com/JonathasHenrique/altaris-presenter/releases/latest) |
 
 > 📖 **Quer ver o passo a passo completo com telas e detalhes de cada recurso?**  
 > Acesse o nosso [📖 Manual e Apresentação Visual do Sistema (docs/APRESENTACAO_APP.md)](docs/APRESENTACAO_APP.md).

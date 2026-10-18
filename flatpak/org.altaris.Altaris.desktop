@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Altaris Presenter
+Comment=Sistema profissional e livre de projeção e transmissão para igrejas
+Exec=open-presenter
+Icon=org.altaris.Altaris
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;Video;Presentation;
+StartupWMClass=open-presenter

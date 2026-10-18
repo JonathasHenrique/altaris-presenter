@@ -1,7 +1,7 @@
 [package]
 name = "open-presenter"
-version = "0.1.0"
-description = "A powerful, modern, open-source worship and projection software for Linux"
+version = "1.0.0"
+description = "Altaris Presenter - Software livre de projeção e transmissão para igrejas"
 authors = ["Jonathas"]
 license = "GPL-3.0-or-later"
 edition = "2021"

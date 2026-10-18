@@ -1,0 +1,31 @@
+app-id: org.altaris.Altaris
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: open-presenter
+
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --share=network
+  - --device=dri
+  - --filesystem=xdg-documents
+  - --filesystem=xdg-download
+
+modules:
+  - name: open-presenter
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 open-presenter /app/bin/open-presenter
+      - install -Dm644 org.altaris.Altaris.desktop /app/share/applications/org.altaris.Altaris.desktop
+      - install -Dm644 org.altaris.Altaris.png /app/share/icons/hicolor/128x128/apps/org.altaris.Altaris.png
+    sources:
+      - type: file
+        path: ../src-tauri/target/release/open-presenter
+      - type: file
+        path: org.altaris.Altaris.desktop
+      - type: file
+        path: ../src-tauri/icons/128x128.png
+        dest-filename: org.altaris.Altaris.png
