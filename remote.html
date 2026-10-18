@@ -2,65 +2,206 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenPresenter - Controle Remoto Mobile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Altaris - Controle Remoto Mobile</title>
   <link rel="stylesheet" href="/src/styles/main.css">
   <style>
     body {
-      padding: 16px;
+      padding: 14px;
       overflow-y: auto;
       height: 100vh;
       display: flex;
       flex-direction: column;
+      background: #090b10;
+      -webkit-tap-highlight-color: transparent;
     }
     .remote-live-card {
-      background: #111827;
-      border: 2px solid var(--live-color);
-      border-radius: var(--radius-md);
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 0 16px var(--live-glow);
+      background: linear-gradient(145deg, #131722, #0d1017);
+      border: 1.5px solid var(--live-color);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 6px 24px rgba(239, 68, 68, 0.22);
     }
     .big-nav-btn {
       flex: 1;
-      height: 70px;
-      font-size: 1.2rem;
-      font-weight: 700;
-      border-radius: var(--radius-md);
+      height: 68px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
+      user-select: none;
+      transition: transform 0.08s ease;
+    }
+    .big-nav-btn:active {
+      transform: scale(0.96);
+    }
+    .rem-slide-item, .rem-playlist-item {
+      padding: 11px 13px;
+      border-radius: 10px;
+      background: #131722;
+      border: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 7px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      text-align: left;
+      width: 100%;
+      color: #e2e8f0;
+    }
+    .rem-slide-item.active {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.16);
+    }
+    .rem-playlist-item.active {
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.2);
+    }
+    .rem-ver-btn {
+      flex: 1;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #161922;
+      color: #cbd5e1;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-align: center;
+    }
+    .rem-ver-btn.active {
+      background: #10b981;
+      color: #052e16;
+      border-color: #10b981;
     }
   </style>
 </head>
 <body>
-  <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-    <div style="font-weight: 800; font-size: 1.2rem; color: #6366f1;">OpenPresenter Remote</div>
-    <span class="badge badge-verse">Ao Vivo</span>
+  <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 1.2rem;">📱</span>
+      <span style="font-weight: 800; font-size: 1.05rem; color: #fff;">Altaris</span>
+    </div>
+    <span id="rem-conn-badge" class="slide-badge-pill slide-badge-bible">● Conectado</span>
   </header>
 
-  <div class="remote-live-card">
-    <div style="font-size: 0.75rem; font-weight: 700; color: #f87171; text-transform: uppercase; margin-bottom: 4px;">NO AR AGORA</div>
-    <div id="remote-live-title" style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 8px;">Boas-Vindas</div>
-    <div id="remote-live-text" style="font-size: 0.95rem; color: #cbd5e1; white-space: pre-line; line-height: 1.4;">Sejam bem-vindos ao culto!</div>
+  <!-- Mobile Tabs: Slides | Músicas & Culto | Bíblia | Palco -->
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 12px;">
+    <button id="rem-tab-slides" class="btn btn-primary" style="justify-content: center; padding: 8px 4px; font-size: 0.76rem;">📽️ Slides</button>
+    <button id="rem-tab-songs" class="btn" style="justify-content: center; padding: 8px 4px; font-size: 0.76rem;">🎵 Músicas</button>
+    <button id="rem-tab-bible" class="btn" style="justify-content: center; padding: 8px 4px; font-size: 0.76rem;">📖 Bíblia</button>
+    <button id="rem-tab-stage" class="btn" style="justify-content: center; padding: 8px 4px; font-size: 0.76rem;">🎸 Palco</button>
   </div>
 
-  <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-    <button id="btn-remote-prev" class="btn big-nav-btn" style="background: #1f2937;">◀ ANTERIOR</button>
-    <button id="btn-remote-next" class="btn btn-primary big-nav-btn">PRÓXIMO ▶</button>
+  <!-- Pane 1: Slides -->
+  <div id="rem-pane-slides" style="display: flex; flex-direction: column; flex: 1;">
+    <div class="remote-live-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <span style="font-size: 0.68rem; font-weight: 800; color: #f87171; text-transform: uppercase; letter-spacing: 0.05em;">● NO TELÃO AGORA</span>
+        <span id="remote-live-counter" style="font-size: 0.7rem; color: #94a3b8; font-family: monospace;">Slide 1</span>
+      </div>
+      <div id="remote-live-title" style="font-size: 1rem; font-weight: 700; color: #a5b4fc; margin-bottom: 4px;">Boas-Vindas</div>
+      <div id="remote-live-text" style="font-size: 0.92rem; color: #fff; white-space: pre-line; line-height: 1.38; font-weight: 500;">Sejam bem-vindos ao culto!</div>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+      <button id="btn-remote-prev" class="btn big-nav-btn" style="background: #1e293b; border-color: rgba(255,255,255,0.14);">◀ ANTERIOR</button>
+      <button id="btn-remote-next" class="btn btn-primary big-nav-btn">PRÓXIMO ▶</button>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+      <button id="btn-remote-clear" class="btn" style="flex: 1; justify-content: center; padding: 10px; font-size: 0.8rem;">Limpar Texto (F1)</button>
+      <button id="btn-remote-blackout" class="btn" style="flex: 1; justify-content: center; padding: 10px; font-size: 0.8rem; color: #f87171;">Blackout (F2)</button>
+    </div>
+
+    <div style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">PRÓXIMO SLIDE:</div>
+    <div id="remote-next-text" style="padding: 10px 12px; background: #131722; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px;">
+      Aguardando...
+    </div>
+
+    <div style="font-size: 0.74rem; font-weight: 700; color: #a5b4fc; text-transform: uppercase; margin-bottom: 6px;">TOQUE PARA PULAR DIRETO AO SLIDE:</div>
+    <div id="remote-slides-list" style="display: flex; flex-direction: column; padding-bottom: 24px;"></div>
   </div>
 
-  <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-    <button id="btn-remote-clear" class="btn" style="flex: 1; justify-content: center; padding: 12px;">Limpar Texto</button>
-    <button id="btn-remote-blackout" class="btn" style="flex: 1; justify-content: center; padding: 12px; color: #f87171;">Blackout</button>
+  <!-- Pane 2: Músicas & Ordem do Culto -->
+  <div id="rem-pane-songs" style="display: none; flex-direction: column; gap: 12px;">
+    <div style="background: #111827; padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+      <div style="font-weight: 700; font-size: 0.88rem; color: #818cf8; margin-bottom: 8px;">🎵 Buscar e Projetar Música / Harpa</div>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <input type="text" id="rem-song-input" placeholder="Nome do louvor ou nº da Harpa (ex: 545, Bondade de Deus)..." style="flex: 1; background: #0a0b10; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 0.9rem; outline: none;">
+        <button id="btn-rem-song-fire" class="btn btn-primary" style="padding: 0 14px; font-weight: 700;">Projetar</button>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+        <button class="btn rem-quick-song" data-song="Bondade de Deus" style="font-size: 0.72rem; padding: 5px 9px;">🎵 Bondade de Deus</button>
+        <button class="btn rem-quick-song" data-song="Porque Ele Vive" style="font-size: 0.72rem; padding: 5px 9px;">🎵 Porque Ele Vive</button>
+        <button class="btn rem-quick-song" data-song="Alvo Mais Que a Neve" style="font-size: 0.72rem; padding: 5px 9px;">🎵 Harpa 39</button>
+        <button class="btn rem-quick-song" data-song="Conversão" style="font-size: 0.72rem; padding: 5px 9px;">🎵 Harpa 15</button>
+      </div>
+    </div>
+
+    <div style="background: #111827; padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+      <div style="font-weight: 700; font-size: 0.88rem; color: #fff; margin-bottom: 8px;">📋 Ordem do Culto de Hoje (Toque para Abrir)</div>
+      <div id="remote-playlist-list" style="display: flex; flex-direction: column;">
+        <div style="font-size: 0.8rem; color: #64748b;">Sincronizando itens do culto...</div>
+      </div>
+    </div>
   </div>
 
-  <div style="font-size: 0.85rem; font-weight: 700; color: #94a3b8; margin-bottom: 8px;">PRÓXIMO SLIDE:</div>
-  <div id="remote-next-text" style="padding: 12px; background: #1a1d26; border-radius: var(--radius-sm); font-size: 0.9rem; color: #94a3b8;">
-    Aguardando...
+  <!-- Pane 3: Controle Remoto da Bíblia -->
+  <div id="rem-pane-bible" style="display: none; flex-direction: column; gap: 10px;">
+    <div style="background: #111827; padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+      <div style="font-weight: 700; font-size: 0.82rem; color: #94a3b8; margin-bottom: 6px;">TRADUÇÃO DA BÍBLIA (TROCA INSTANTÂNEA):</div>
+      <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+        <button class="rem-ver-btn active" data-ver="acf">📖 ACF</button>
+        <button class="rem-ver-btn" data-ver="arc">📖 ARC</button>
+        <button class="rem-ver-btn" data-ver="tb">📖 TB</button>
+      </div>
+
+      <div style="font-weight: 700; font-size: 0.88rem; color: #10b981; margin-bottom: 8px;">📖 Projetar Versículo do Celular</div>
+      <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <input type="text" id="rem-bible-input" placeholder="Ex: jo 3 16, sl 23 1, rm 8 28..." style="flex: 1; background: #0a0b10; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 0.95rem; outline: none;">
+        <button id="btn-rem-bible-fire" class="btn btn-primary" style="padding: 0 16px; font-weight: 700;">Projetar</button>
+      </div>
+      <div style="font-size: 0.75rem; color: #94a3b8;">Passagens rápidas de culto:</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+        <button class="btn rem-quick-verse" data-ref="jo 3 16" style="font-size: 0.75rem; padding: 6px 10px;">João 3:16</button>
+        <button class="btn rem-quick-verse" data-ref="sl 23 1" style="font-size: 0.75rem; padding: 6px 10px;">Salmos 23:1</button>
+        <button class="btn rem-quick-verse" data-ref="sl 91 1" style="font-size: 0.75rem; padding: 6px 10px;">Salmos 91:1</button>
+        <button class="btn rem-quick-verse" data-ref="rm 8 28" style="font-size: 0.75rem; padding: 6px 10px;">Romanos 8:28</button>
+        <button class="btn rem-quick-verse" data-ref="fp 4 13" style="font-size: 0.75rem; padding: 6px 10px;">Filipenses 4:13</button>
+        <button class="btn rem-quick-verse" data-ref="is 41 10" style="font-size: 0.75rem; padding: 6px 10px;">Isaías 41:10</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pane 4: Comunicação com o Palco / Avisos -->
+  <div id="rem-pane-stage" style="display: none; flex-direction: column; gap: 10px;">
+    <div style="background: #111827; padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+      <div style="font-weight: 700; font-size: 0.88rem; color: #fbbf24; margin-bottom: 8px;">🎸 Mensagem Privada para o Palco / Pregador</div>
+      <input type="text" id="rem-stage-msg" placeholder="Ex: Tempo encerrado / Subir ministério..." style="width: 100%; background: #0a0b10; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 0.92rem; margin-bottom: 10px; outline: none;">
+      <div style="display: flex; gap: 8px;">
+        <button id="btn-rem-stage-send" class="btn btn-primary" style="flex: 1; justify-content: center; padding: 10px;">Enviar ao Palco</button>
+        <button id="btn-rem-stage-flash" class="btn" style="padding: 10px; color: #f87171; border-color: rgba(239,68,68,0.4);">🚨 Piscar</button>
+        <button id="btn-rem-stage-clear" class="btn btn-ghost" style="padding: 10px;">Limpar</button>
+      </div>
+    </div>
+
+    <div style="background: #111827; padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+      <div style="font-weight: 700; font-size: 0.88rem; color: #38bdf8; margin-bottom: 8px;">📢 Aviso Rápido no Telão do Público</div>
+      <input type="text" id="rem-alert-msg" placeholder="Ex: Pais comparecer ao Ministério Infantil..." style="width: 100%; background: #0a0b10; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 0.92rem; margin-bottom: 10px; outline: none;">
+      <div style="display: flex; gap: 8px;">
+        <button id="btn-rem-alert-send" class="btn btn-primary" style="flex: 1; justify-content: center; padding: 10px;">Exibir no Telão</button>
+        <button id="btn-rem-alert-clear" class="btn btn-ghost" style="padding: 10px;">Remover</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="/src/ts/remote.ts"></script>
 </body>
 </html>
+

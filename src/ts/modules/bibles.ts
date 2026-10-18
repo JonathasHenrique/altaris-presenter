@@ -1,4 +1,4 @@
-// Holyrics-Style Ultra-Fast Scripture Search Engine with Multi-Version & Import Support
+// Ultra-Fast Scripture Search Engine with Multi-Version & Import Support
 import { Slide, PlaylistItem } from "../engine/state";
 
 export interface BibleVerse {
@@ -54,7 +54,7 @@ const BOOK_MAP: Record<string, string> = {
   "ed": "Esdras", "esdras": "Esdras",
   "ne": "Neemias", "neemias": "Neemias",
   "et": "Ester", "ester": "Ester",
-  "jo": "Jó", "jó": "Jó",
+  "jó": "Jó", "job": "Jó",
   "sl": "Salmos", "salmo": "Salmos", "salmos": "Salmos", "ps": "Salmos",
   "pv": "Provérbios", "proverbios": "Provérbios", "pr": "Provérbios",
   "ec": "Eclesiastes", "eclesiastes": "Eclesiastes",
@@ -68,7 +68,7 @@ const BOOK_MAP: Record<string, string> = {
   "jl": "Joel", "joel": "Joel",
   "am": "Amós", "amos": "Amós",
   "ob": "Obadias", "obadias": "Obadias",
-  "jonas": "Jonas",
+  "jonas": "Jonas", "jn": "Jonas",
   "mq": "Miquéias", "miqueias": "Miquéias",
   "na": "Naum", "naum": "Naum",
   "hc": "Habacuque", "habacuque": "Habacuque",
@@ -79,7 +79,7 @@ const BOOK_MAP: Record<string, string> = {
   "mt": "Mateus", "mateus": "Mateus",
   "mc": "Marcos", "marcos": "Marcos",
   "lc": "Lucas", "lucas": "Lucas",
-  "joao": "João", "joão": "João", "jh": "João",
+  "jo": "João", "joao": "João", "joão": "João", "jh": "João",
   "atos": "Atos", "at": "Atos",
   "rm": "Romanos", "romanos": "Romanos", "ro": "Romanos",
   "1co": "1 Coríntios", "1corintios": "1 Coríntios",
@@ -105,6 +105,65 @@ const BOOK_MAP: Record<string, string> = {
   "ap": "Apocalipse", "apocalipse": "Apocalipse", "apoc": "Apocalipse"
 };
 
+export const CANONICAL_66_BOOKS: { abbrev: string; name: string }[] = [
+  { abbrev: "gn", name: "Gênesis" }, { abbrev: "ex", name: "Êxodo" }, { abbrev: "lv", name: "Levítico" },
+  { abbrev: "nm", name: "Números" }, { abbrev: "dt", name: "Deuteronômio" }, { abbrev: "js", name: "Josué" },
+  { abbrev: "jz", name: "Juízes" }, { abbrev: "rt", name: "Rute" }, { abbrev: "1sm", name: "1 Samuel" },
+  { abbrev: "2sm", name: "2 Samuel" }, { abbrev: "1rs", name: "1 Reis" }, { abbrev: "2rs", name: "2 Reis" },
+  { abbrev: "1cr", name: "1 Crônicas" }, { abbrev: "2cr", name: "2 Crônicas" }, { abbrev: "ed", name: "Esdras" },
+  { abbrev: "ne", name: "Neemias" }, { abbrev: "et", name: "Ester" }, { abbrev: "jó", name: "Jó" },
+  { abbrev: "sl", name: "Salmos" }, { abbrev: "pv", name: "Provérbios" }, { abbrev: "ec", name: "Eclesiastes" },
+  { abbrev: "ct", name: "Cânticos" }, { abbrev: "is", name: "Isaías" }, { abbrev: "jr", name: "Jeremias" },
+  { abbrev: "lm", name: "Lamentações de Jeremias" }, { abbrev: "ez", name: "Ezequiel" }, { abbrev: "dn", name: "Daniel" },
+  { abbrev: "os", name: "Oséias" }, { abbrev: "jl", name: "Joel" }, { abbrev: "am", name: "Amós" },
+  { abbrev: "ob", name: "Obadias" }, { abbrev: "jn", name: "Jonas" }, { abbrev: "mq", name: "Miquéias" },
+  { abbrev: "na", name: "Naum" }, { abbrev: "hc", name: "Habacuque" }, { abbrev: "sf", name: "Sofonias" },
+  { abbrev: "ag", name: "Ageu" }, { abbrev: "zc", name: "Zacarias" }, { abbrev: "ml", name: "Malaquias" },
+  { abbrev: "mt", name: "Mateus" }, { abbrev: "mc", name: "Marcos" }, { abbrev: "lc", name: "Lucas" },
+  { abbrev: "jo", name: "João" }, { abbrev: "at", name: "Atos" }, { abbrev: "rm", name: "Romanos" },
+  { abbrev: "1co", name: "1 Coríntios" }, { abbrev: "2co", name: "2 Coríntios" }, { abbrev: "gl", name: "Gálatas" },
+  { abbrev: "ef", name: "Efésios" }, { abbrev: "fp", name: "Filipenses" }, { abbrev: "cl", name: "Colossenses" },
+  { abbrev: "1ts", name: "1 Tessalonicenses" }, { abbrev: "2ts", name: "2 Tessalonicenses" }, { abbrev: "1tm", name: "1 Timóteo" },
+  { abbrev: "2tm", name: "2 Timóteo" }, { abbrev: "tt", name: "Tito" }, { abbrev: "fm", name: "Filemom" },
+  { abbrev: "hb", name: "Hebreus" }, { abbrev: "tg", name: "Tiago" }, { abbrev: "1pe", name: "1 Pedro" },
+  { abbrev: "2pe", name: "2 Pedro" }, { abbrev: "1jo", name: "1 João" }, { abbrev: "2jo", name: "2 João" },
+  { abbrev: "3jo", name: "3 João" }, { abbrev: "jd", name: "Judas" }, { abbrev: "ap", name: "Apocalipse" }
+];
+
+export interface BibleCatalogEntry {
+  id: string;
+  name: string;
+  lang: string;
+  license: "public-domain" | "community-external";
+  url: string;
+  description?: string;
+  size?: string;
+}
+
+export type CatalogBibleEntry = BibleCatalogEntry;
+
+export const PUBLIC_DOMAIN_CATALOG: BibleCatalogEntry[] = [
+  { id: "acf", name: "Almeida Corrigida Fiel (ACF)", lang: "Português", license: "public-domain", url: "/data/bibles/biblia_acf.json", description: "Tradução clássica fidedigna ao Texto Recebido.", size: "4.1 MB" },
+  { id: "arc", name: "Almeida Revista e Corrigida (ARC)", lang: "Português", license: "public-domain", url: "/data/bibles/biblia_arc.json", description: "Histórica e amplamente usada nas igrejas brasileiras.", size: "4.3 MB" },
+  { id: "tb", name: "Tradução Brasileira 1917 (TB)", lang: "Português", license: "public-domain", url: "/data/bibles/biblia_tb.json", description: "Primeira tradução bíblica direta para o português do Brasil.", size: "3.9 MB" },
+  { id: "aa", name: "Almeida Revisada Imprensa Bíblica (AA)", lang: "Português", license: "public-domain", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/pt_aa.json", description: "Texto revisado de fácil compreensão.", size: "4.2 MB" },
+  { id: "matos", name: "Bíblia Padre Matos Soares 1956 (MSO)", lang: "Português", license: "public-domain", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/pt_matos.json", description: "Tradução histórica da Vulgata Latina.", size: "4.0 MB" },
+  { id: "kjv", name: "King James Version (KJV)", lang: "Inglês", license: "public-domain", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/en_kjv.json", description: "A mais influente tradução bíblica em língua inglesa (1611).", size: "4.4 MB" },
+  { id: "web", name: "World English Bible (WEB)", lang: "Inglês", license: "public-domain", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/en_web.json", description: "Tradução moderna em inglês 100% de domínio público.", size: "4.2 MB" },
+  { id: "rvr", name: "Reina-Valera 1909 (RVR)", lang: "Espanhol", license: "public-domain", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/es_rvr1960.json", description: "A versão mais respeitada em todo o mundo hispano.", size: "4.3 MB" }
+];
+
+export const COMMUNITY_EXTERNAL_CATALOG: BibleCatalogEntry[] = [
+  { id: "nvi", name: "Nova Versão Internacional (NVI)", lang: "Português", license: "community-external", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/pt_nvi.json", description: "Linguagem contemporânea e de leitura fluida.", size: "4.0 MB" },
+  { id: "naa", name: "Nova Almeida Atualizada (NAA)", lang: "Português", license: "community-external", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/pt_naa.json", description: "Equilíbrio entre fidelidade formal e clareza moderna.", size: "4.1 MB" },
+  { id: "nvt", name: "Nova Versão Transformadora (NVT)", lang: "Português", license: "community-external", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/pt_nvt.json", description: "Excelente clareza para leitura e compreensão.", size: "4.2 MB" },
+  { id: "ntlh", name: "Nova Tradução na Linguagem de Hoje (NTLH)", lang: "Português", license: "community-external", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/pt_ntlh.json", description: "Vocabulário simples e direto para todas as idades.", size: "3.8 MB" },
+  { id: "ara", name: "Almeida Revista e Atualizada (ARA)", lang: "Português", license: "community-external", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/pt_ara.json", description: "Tradução clássica da Sociedade Bíblica do Brasil.", size: "4.2 MB" },
+  { id: "kja", name: "King James Atualizada (KJA)", lang: "Português", license: "community-external", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/pt_kja.json", description: "Tradição King James vertida para o português moderno.", size: "4.3 MB" },
+  { id: "nbv", name: "Nova Bíblia Viva (NBV)", lang: "Português", license: "community-external", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/pt_nbv.json", description: "Paráfrase expressiva e dinâmica.", size: "3.9 MB" },
+  { id: "a21", name: "Almeida Século 21 (A21)", lang: "Português", license: "community-external", url: "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/pt_a21.json", description: "Estilo elegante mantendo a solenidade tradicional.", size: "4.1 MB" }
+];
+
 export class BibleEngine {
   private static activeVersionId = "acf";
   private static versionDataCache: Map<string, BibleBookData[]> = new Map();
@@ -129,6 +188,10 @@ export class BibleEngine {
 
   static getAvailableVersions(): BibleVersionInfo[] {
     return this.availableVersions;
+  }
+
+  static isVersionInstalled(id: string): boolean {
+    return this.availableVersions.some((v) => v.id.toLowerCase() === id.toLowerCase());
   }
 
   static getActiveVersion(): string {
@@ -174,18 +237,13 @@ export class BibleEngine {
       }
     }
 
-    // Load built-in static JSON files
-    const fileMap: Record<string, string> = {
-      acf: "/data/bibles/biblia_acf.json",
-      arc: "/data/bibles/biblia_arc.json",
-      tb: "/data/bibles/biblia_tb.json"
-    };
-
-    const targetUrl = fileMap[versionId] || fileMap.acf;
+    // Load built-in or disk-saved static JSON files (/data/bibles/biblia_<id>.json)
+    const targetUrl = `/data/bibles/biblia_${versionId.toLowerCase()}.json`;
     try {
       const res = await fetch(targetUrl);
       if (res.ok) {
-        const data: BibleBookData[] = await res.json();
+        const rawText = (await res.text()).replace(/^\uFEFF/, "");
+        const data: BibleBookData[] = JSON.parse(rawText);
         this.versionDataCache.set(versionId, data);
         this.applyBooks(data);
         console.log(`[BibleEngine] Bíblia ${versionId.toUpperCase()} carregada com ${data.length} livros`);
@@ -199,9 +257,14 @@ export class BibleEngine {
   }
 
   private static applyBooks(data: BibleBookData[]) {
-    this.books = data;
+    this.books = data.map((b, idx) => {
+      const canon = CANONICAL_66_BOOKS[idx];
+      const name = b.name || canon?.name || `Livro ${idx + 1}`;
+      const abbrev = b.abbrev || canon?.abbrev || name.slice(0, 3).toLowerCase();
+      return { name, abbrev, chapters: b.chapters };
+    });
     this.booksByName.clear();
-    for (const b of data) {
+    for (const b of this.books) {
       this.booksByName.set(b.name.toLowerCase(), b);
       this.booksByName.set(b.abbrev.toLowerCase(), b);
     }
@@ -365,51 +428,161 @@ export class BibleEngine {
           });
           books.push({ name: bName, abbrev, chapters });
         });
+      } else {
+        // Check OSIS XML format (<div type="book" osisID="Gen"><chapter osisID="Gen.1"><verse osisID="Gen.1.1">...)
+        const osisBooks = doc.querySelectorAll("div[type='book']");
+        if (osisBooks.length > 0) {
+          osisBooks.forEach((bNode) => {
+            const osisId = bNode.getAttribute("osisID") || "Livro";
+            const bName = BOOK_MAP[osisId.toLowerCase()] || osisId;
+            const abbrev = osisId.slice(0, 3).toLowerCase();
+            const chapters: string[][] = [];
+            bNode.querySelectorAll("chapter").forEach((cNode) => {
+              const verses: string[] = [];
+              cNode.querySelectorAll("verse").forEach((vNode) => {
+                const txt = vNode.textContent?.trim();
+                if (txt) verses.push(txt);
+              });
+              if (verses.length > 0) chapters.push(verses);
+            });
+            if (chapters.length > 0) books.push({ name: bName, abbrev, chapters });
+          });
+        }
       }
     }
 
     if (books.length === 0) {
-      throw new Error("Não foi possível reconhecer o formato XML da Bíblia (compatível com Zefania ou OpenSong).");
+      throw new Error("Não foi possível reconhecer o formato XML da Bíblia (compatível com Zefania, OpenSong ou OSIS).");
     }
 
-    const id = `custom-${Date.now()}`;
+    const cleanId = name.trim().toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || `xml-${Date.now()}`;
+    const id = this.isVersionInstalled(cleanId) ? `${cleanId}-${Date.now().toString().slice(-3)}` : cleanId;
     const versionInfo: BibleVersionInfo = { id, name: name.trim() || "Bíblia Importada", isCustom: true };
 
-    localStorage.setItem(`open_presenter_bible_${id}`, JSON.stringify(books));
+    void this.persistBibleBooks(id, books);
     this.registerCustomVersion(versionInfo);
     this.versionDataCache.set(id, books);
-    this.setVersion(id);
+    void this.setVersion(id);
 
     return versionInfo;
   }
 
-  static importBibleJson(name: string, jsonString: string): BibleVersionInfo {
-    const raw = JSON.parse(jsonString);
+  static importBibleJson(name: string, jsonString: string, forcedId?: string): BibleVersionInfo {
+    const cleanJson = jsonString.replace(/^\uFEFF/, "");
+    const raw = JSON.parse(cleanJson);
     if (!Array.isArray(raw) || raw.length === 0 || !raw[0].chapters) {
       throw new Error("Formato JSON inválido. Esperado array de 66 livros com atributo 'chapters'.");
     }
 
-    const books: BibleBookData[] = raw.map((b: any) => ({
-      name: b.name || "Livro",
-      abbrev: b.abbrev || (b.name ? b.name.slice(0, 3) : "lv").toLowerCase(),
-      chapters: b.chapters
-    }));
+    const books: BibleBookData[] = raw.map((b: any, idx: number) => {
+      const canon = CANONICAL_66_BOOKS[idx];
+      return {
+        name: b.name || canon?.name || `Livro ${idx + 1}`,
+        abbrev: b.abbrev || canon?.abbrev || (b.name ? b.name.slice(0, 3) : "lv").toLowerCase(),
+        chapters: b.chapters
+      };
+    });
 
-    const id = `custom-${Date.now()}`;
+    const cleanId = forcedId || name.trim().toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || `json-${Date.now()}`;
+    const id = forcedId ? forcedId.toLowerCase() : (this.isVersionInstalled(cleanId) ? `${cleanId}-${Date.now().toString().slice(-3)}` : cleanId);
     const versionInfo: BibleVersionInfo = { id, name: name.trim() || "Bíblia Personalizada", isCustom: true };
 
-    localStorage.setItem(`open_presenter_bible_${id}`, JSON.stringify(books));
+    void this.persistBibleBooks(id, books);
     this.registerCustomVersion(versionInfo);
     this.versionDataCache.set(id, books);
-    this.setVersion(id);
+    void this.setVersion(id);
 
     return versionInfo;
   }
 
+  static async downloadCatalogVersion(entryOrId: string | BibleCatalogEntry, name?: string, remoteUrl?: string): Promise<BibleVersionInfo> {
+    const id = typeof entryOrId === "object" ? entryOrId.id : entryOrId;
+    const vName = typeof entryOrId === "object" ? entryOrId.name : (name || id);
+    const url = typeof entryOrId === "object" ? entryOrId.url : (remoteUrl || "");
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Falha ao baixar a versão ${vName} (HTTP ${res.status})`);
+    }
+    const text = await res.text();
+    if (text.trim().startsWith("<")) {
+      return this.importBibleXml(vName, text);
+    }
+    return this.importBibleJson(vName, text, id.toLowerCase());
+  }
+
+  static removeCustomVersion(id: string): void {
+    if (["acf", "arc", "tb"].includes(id.toLowerCase())) return;
+    this.availableVersions = this.availableVersions.filter((v) => v.id !== id);
+    this.versionDataCache.delete(id);
+    try {
+      localStorage.removeItem(`open_presenter_bible_${id}`);
+      const customList = this.availableVersions.filter((ver) => ver.isCustom);
+      localStorage.setItem("open_presenter_custom_bibles_meta", JSON.stringify(customList));
+    } catch {}
+    if (this.activeVersionId === id) {
+      void this.setVersion("acf");
+    }
+  }
+
+  private static async persistBibleBooks(id: string, books: BibleBookData[]): Promise<void> {
+    const serialized = JSON.stringify(books);
+    try {
+      await fetch(`/__save_bible?id=${encodeURIComponent(id)}`, {
+        method: "POST",
+        body: serialized
+      });
+    } catch {}
+    try {
+      localStorage.setItem(`open_presenter_bible_${id}`, serialized);
+    } catch {
+      // Se exceder a cota de 5MB do localStorage, o arquivo já está salvo em /data/bibles/biblia_<id>.json!
+    }
+  }
+
   private static registerCustomVersion(v: BibleVersionInfo) {
-    this.availableVersions.push(v);
+    const existingIdx = this.availableVersions.findIndex((ex) => ex.id === v.id);
+    if (existingIdx >= 0) {
+      this.availableVersions[existingIdx] = v;
+    } else {
+      this.availableVersions.push(v);
+    }
     const customList = this.availableVersions.filter((ver) => ver.isCustom);
-    localStorage.setItem("open_presenter_custom_bibles_meta", JSON.stringify(customList));
+    try {
+      localStorage.setItem("open_presenter_custom_bibles_meta", JSON.stringify(customList));
+    } catch {}
+  }
+
+  // Bible Favorites & History Support
+  static getFavorites(): BibleVerse[] {
+    try {
+      const raw = localStorage.getItem("open_presenter_bible_favorites");
+      if (raw) return JSON.parse(raw);
+    } catch {
+      /* ignore */
+    }
+    return [];
+  }
+
+  static toggleFavorite(verse: BibleVerse): boolean {
+    const favs = this.getFavorites();
+    const idx = favs.findIndex(
+      (f) => f.book === verse.book && f.chapter === verse.chapter && f.verse === verse.verse
+    );
+    let added = false;
+    if (idx >= 0) {
+      favs.splice(idx, 1);
+    } else {
+      favs.unshift(verse);
+      added = true;
+    }
+    localStorage.setItem("open_presenter_bible_favorites", JSON.stringify(favs.slice(0, 100)));
+    return added;
+  }
+
+  static setFavorites(favs: BibleVerse[]): void {
+    if (Array.isArray(favs)) {
+      localStorage.setItem("open_presenter_bible_favorites", JSON.stringify(favs.slice(0, 100)));
+    }
   }
 
   static verseToSlide(v: BibleVerse): Slide {

@@ -613,6 +613,50 @@ main.workspace {
   color: #a5b4fc;
 }
 
+/* Modal Navigation Tabs (Add Item Modal) */
+.modal-tabs-header {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+
+.modal-nav-tab {
+  flex: 1;
+  min-width: 100px;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.16s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.modal-nav-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.modal-nav-tab.active-tab-btn {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.28), rgba(139, 92, 246, 0.28)) !important;
+  color: #a5b4fc !important;
+  border-color: rgba(129, 140, 248, 0.6) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
 /* Status Bar */
 footer.status-bar {
   display: flex;
@@ -838,12 +882,12 @@ select.btn option {
   margin: 3px 6px;
 }
 
-/* Quick Action Pills in Sidebar */
+/* Quick Action Pills in Sidebar (Organizado 3x2 harmonioso) */
 .quick-pills-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  margin-bottom: 6px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-bottom: 8px;
 }
 
 .quick-pill {
@@ -851,30 +895,67 @@ select.btn option {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 6px 4px;
-  border-radius: 6px;
+  padding: 7px 4px;
+  border-radius: 8px;
   border: 1px solid var(--border-subtle);
   background: var(--bg-tertiary);
   color: #cbd5e1;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.12s;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .quick-pill:hover {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.22);
   border-color: var(--accent-primary);
   color: #fff;
+  transform: translateY(-1px);
 }
 
-/* macOS Preferences Modal (Image 5 style) */
+/* Instant Bible Version Segmented Control (macOS Safari style) */
+.bible-segmented-pill {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(15, 18, 26, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.bible-seg-btn {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.bible-seg-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.bible-seg-btn.active {
+  background: #6366f1;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* macOS Safari Settings Window (Exact match to macOS Safari Preferences) */
 .macos-prefs-modal {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(14px);
   z-index: 3000;
   align-items: center;
   justify-content: center;
@@ -882,26 +963,65 @@ select.btn option {
 }
 
 .macos-prefs-window {
-  background: #141722;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #1c1f2b;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 14px;
-  width: 760px;
-  max-width: 95vw;
-  height: 520px;
+  width: 840px;
+  max-width: 96vw;
+  height: 600px;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 30px 70px -12px rgba(0, 0, 0, 0.9);
+}
+
+.macos-window-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 4px;
+  background: #232736;
+  user-select: none;
+}
+
+.macos-traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 70px;
+}
+
+.traffic-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.traffic-close { background: #ff5f56; }
+.traffic-min { background: #ffbd2e; }
+.traffic-max { background: #27c93f; }
+
+.macos-window-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  text-align: center;
+  flex: 1;
 }
 
 .prefs-top-toolbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 12px 16px;
-  background: rgba(20, 23, 34, 0.95);
-  border-bottom: 1px solid var(--border-subtle);
+  gap: 6px;
+  padding: 6px 14px 10px;
+  background: #232736;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  flex-wrap: wrap;
 }
 
 .prefs-tab-btn {
@@ -909,19 +1029,21 @@ select.btn option {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 7px 13px;
+  border-radius: 9px;
   border: none;
   background: transparent;
   color: #94a3b8;
   font-size: 0.72rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.12s;
+  transition: all 0.14s;
+  min-width: 72px;
 }
 
 .prefs-tab-btn .tab-icon {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
+  line-height: 1;
 }
 
 .prefs-tab-btn:hover {
@@ -931,20 +1053,58 @@ select.btn option {
 
 .prefs-tab-btn.active {
   color: #38bdf8;
-  background: rgba(56, 189, 248, 0.14);
-  font-weight: 700;
+  background: rgba(56, 189, 248, 0.16);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.25);
 }
 
 .prefs-content-body {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 24px 32px;
+  background: #181b26;
 }
 
 .prefs-section {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.macos-form-row {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 6px 0;
+}
+
+.macos-form-label {
+  text-align: right;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  padding-top: 5px;
+}
+
+.macos-form-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.macos-form-hint {
+  font-size: 0.73rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.macos-divider {
+  border: none;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 6px 0;
 }
 
 .prefs-group {
@@ -965,3 +1125,330 @@ select.btn option {
 .prefs-row:last-child {
   border-bottom: none;
 }
+
+/* Fix QR Code Canvas / SVG Alignment & Centering */
+#qr-image svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 210px !important;
+  max-height: 210px !important;
+  display: block !important;
+  border-radius: 8px;
+}
+
+/* Reorder Buttons (▲ / ▼) in Culto de Hoje */
+.playlist-order-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  padding: 0;
+}
+
+.playlist-order-btn:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.3);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.playlist-order-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+/* Active Motion Video Preset Highlight */
+.btn-preset-bg-video.active-preset {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(16, 185, 129, 0.25)) !important;
+  border-color: #34d399 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.35) !important;
+}
+
+/* Bible Catalog Cards in Preferences */
+.bible-catalog-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  font-size: 0.78rem;
+}
+
+.bible-catalog-card.installed {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+/* Offline Floating Toast Notification */
+.offline-toast-card {
+  pointer-events: auto;
+  background: #111827;
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  border-left: 5px solid #10b981;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #fff;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 310px;
+  max-width: 440px;
+  animation: slide-in-toast 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  font-size: 0.82rem;
+}
+
+@keyframes slide-in-toast {
+  from { transform: translateX(40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.offline-toast-card.fade-out {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: all 0.3s ease;
+}
+
+/* Standardized Top Action / Panic Buttons (Apple HIG Style) */
+.top-action-btn {
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  min-width: 104px;
+  box-sizing: border-box !important;
+  padding: 0 12px !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  border-radius: 8px !important;
+  line-height: 1 !important;
+  transition: all 0.15s ease !important;
+}
+
+/* Apple Style Segmented Controls */
+.apple-segmented-group {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.apple-segmented-btn {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.apple-segmented-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.apple-segmented-btn.active {
+  background: #3b82f6;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* OBS Mini Live Preview Card */
+.obs-live-preview-box {
+  width: 100%;
+  max-width: 520px;
+  height: 130px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.obs-live-preview-box::before {
+  content: 'PRÉVIA AO VIVO DO OBS (TRANSPARÊNCIA)';
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.08em;
+}
+
+.obs-live-preview-element {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  max-width: 96%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Apple Collapsible Details Accordion */
+details.apple-accordion {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+details.apple-accordion summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  outline: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+details.apple-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Advanced Raffle / Sorteio Styles */
+.raffle-stage-card {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(245, 158, 11, 0.05);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.raffle-stage-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24, #10b981, #6366f1, #f59e0b);
+}
+
+.raffle-result-display {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: #fbbf24;
+  letter-spacing: 0.02em;
+  margin: 10px 0;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 2px 14px rgba(245, 158, 11, 0.4);
+  font-family: Inter, system-ui, sans-serif;
+  transition: all 0.15s ease;
+}
+
+.raffle-result-display.shuffling {
+  color: #38bdf8;
+  text-shadow: 0 0 18px rgba(56, 189, 248, 0.8);
+  transform: scale(1.04);
+}
+
+.raffle-names-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.raffle-names-table th {
+  text-align: left;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #94a3b8;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.raffle-names-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #e2e8f0;
+}
+
+.raffle-names-table tr:hover td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.raffle-badge-pending {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.raffle-badge-won {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fde68a;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+/* Loading HUD - Apple Style */
+@keyframes hud-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loading-hud-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(99, 102, 241, 0.18);
+  border-top-color: #6366f1;
+  border-right-color: #38bdf8;
+  border-radius: 50%;
+  animation: hud-spin 0.75s linear infinite;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
+}
+
+
+
+

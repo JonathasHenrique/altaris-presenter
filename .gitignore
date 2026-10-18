@@ -4,3 +4,21 @@ src-tauri/target/
 dist/
 .DS_Store
 *.log
+
+# Large media files (videos, animations)
+public/data/videos/*.mp4
+public/data/videos/*.webm
+*.mp4
+*.webm
+*.mkv
+
+# User-downloaded copyrighted songs & external bibles (keep only open public domain)
+public/data/songs/holyrics_pack.json
+public/data/bibles/biblia_nvi.json
+public/data/bibles/biblia_naa.json
+public/data/bibles/biblia_nbv.json
+public/data/bibles/biblia_a21.json
+
+# Local backups and user service archives
+*.altaris-backup.json
+*.opw.json

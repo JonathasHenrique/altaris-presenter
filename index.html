@@ -3,30 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenPresenter - Centro de Controle</title>
+  <title>Altaris - Centro de Controle</title>
   <link rel="stylesheet" href="/src/styles/main.css">
+  <script>
+    // Bloqueia o menu de contexto do navegador (Inspecionar/Recarregar) — independente do app carregar.
+    // Campos de texto mantêm o menu nativo (copiar/colar).
+    document.addEventListener("contextmenu", function (e) {
+      var t = e.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      e.preventDefault();
+    }, true);
+    // Bloqueia atalhos de recarregar/devtools (F5, Ctrl+R, F12, Ctrl+Shift+I)
+    document.addEventListener("keydown", function (e) {
+      var k = e.key;
+      if (k === "F5" || k === "F12" || ((e.ctrlKey || e.metaKey) && (k === "r" || k === "R")) ||
+          ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === "I" || k === "i" || k === "J" || k === "j"))) {
+        e.preventDefault();
+      }
+    }, true);
+  </script>
 </head>
 <body>
   <div id="app" style="grid-template-rows: 28px 52px 1fr 30px;">
     <!-- 1. Apple macOS Top Menubar -->
     <nav class="macos-menubar">
-      <!-- Menu: OpenPresenter -->
+      <!-- Menu: Altaris -->
       <div class="menu-root" id="m-root-app">
-        <span class="menu-title app-name">OpenPresenter</span>
+        <span class="menu-title app-name">Altaris</span>
         <div class="macos-dropdown" id="m-drop-app" style="display: none;">
-          <button class="menu-item" id="mi-about"><span class="item-icon">ℹ️</span> Sobre o OpenPresenter...</button>
+          <button class="menu-item" id="mi-about"><span class="item-icon">ℹ️</span> Sobre o Altaris...</button>
           <button class="menu-item" id="mi-settings"><span class="item-icon">⚙️</span> Preferências / Ajustes... <span class="shortcut">⌘,</span></button>
           <hr class="menu-divider">
-          <button class="menu-item" id="mi-quit"><span class="item-icon">✕</span> Encerrar OpenPresenter <span class="shortcut">⌘Q</span></button>
+          <button class="menu-item" id="mi-quit"><span class="item-icon">✕</span> Encerrar Altaris <span class="shortcut">⌘Q</span></button>
         </div>
       </div>
 
       <!-- Menu: Arquivo -->
       <div class="menu-root" id="m-root-file">
         <span class="menu-title">Arquivo</span>
-        <div class="macos-dropdown" id="m-drop-file" style="display: none;">
+        <div class="macos-dropdown" id="m-drop-file" style="display: none; min-width: 260px;">
           <button class="menu-item" id="mi-new-worship"><span class="item-icon">📋</span> Novo Culto <span class="shortcut">⌘N</span></button>
           <button class="menu-item" id="mi-add-item"><span class="item-icon">➕</span> Adicionar Item ao Culto... <span class="shortcut">⌘A</span></button>
+          <hr class="menu-divider">
+          <button class="menu-item" id="mi-save-worship"><span class="item-icon">📋</span> Salvar Culto Atual (.opw.json)... <span class="shortcut">⌘S</span></button>
+          <button class="menu-item" id="mi-load-worship"><span class="item-icon">📥</span> Abrir Culto Salvo...</button>
+          <input type="file" id="input-load-worship-file" accept=".opw,.json,.altaris-backup.json" style="display: none;">
+          <hr class="menu-divider">
+          <button class="menu-item" id="mi-full-backup-export"><span class="item-icon">📦</span> Fazer Backup Completo do Sistema (.altaris-backup.json)...</button>
+          <button class="menu-item" id="mi-full-backup-import"><span class="item-icon">♻️</span> Restaurar Backup Completo...</button>
+          <input type="file" id="input-full-backup-file" accept=".json,.altaris-backup.json" style="display: none;">
           <hr class="menu-divider">
           <button class="menu-item" id="mi-import-file"><span class="item-icon">📂</span> Importar Arquivo (ProPresenter, Holyrics, OpenLP)... <span class="shortcut">⌘O</span></button>
         </div>
@@ -35,37 +60,47 @@
       <!-- Menu: Visualizar -->
       <div class="menu-root" id="m-root-view">
         <span class="menu-title">Visualizar</span>
-        <div class="macos-dropdown" id="m-drop-view" style="display: none; min-width: 240px;">
+        <div class="macos-dropdown" id="m-drop-view" style="display: none; min-width: 260px;">
           <div style="padding: 4px 12px; font-size: 0.7rem; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em;">⏱ Relógio no Telão</div>
           <button class="menu-item menu-clock-opt" data-clock="none"><span class="item-icon clock-check" data-for="none">✓</span> Desativado (Ocultar)</button>
           <button class="menu-item menu-clock-opt" data-clock="topRight"><span class="item-icon clock-check" data-for="topRight"> </span> Canto Superior Direito</button>
           <button class="menu-item menu-clock-opt" data-clock="bottomRight"><span class="item-icon clock-check" data-for="bottomRight"> </span> Canto Inferior Direito</button>
           <button class="menu-item menu-clock-opt" data-clock="bottomLeft"><span class="item-icon clock-check" data-for="bottomLeft"> </span> Canto Inferior Esquerdo</button>
           <hr class="menu-divider">
-          <button class="menu-item" id="mi-toggle-chords"><span class="item-icon">🎸</span> Cifras e Tom para Músicos</button>
-          <button class="menu-item" id="mi-toggle-alerts"><span class="item-icon">💬</span> Painel de Avisos Rápidos</button>
+          <div style="padding: 4px 12px; font-size: 0.7rem; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em;">🎨 Tema de Fundo (Telão)</div>
+          <button class="menu-item menu-bg-opt" data-bg="nebula"><span class="item-icon bg-check" data-for="nebula">✓</span> Nebulosa Índigo (Padrão)</button>
+          <button class="menu-item menu-bg-opt" data-bg="worship-gold"><span class="item-icon bg-check" data-for="worship-gold"> </span> Adoração Dourada (Quente)</button>
+          <button class="menu-item menu-bg-opt" data-bg="royal-blue"><span class="item-icon bg-check" data-for="royal-blue"> </span> Azul Real Profundo</button>
+          <button class="menu-item menu-bg-opt" data-bg="emerald-calm"><span class="item-icon bg-check" data-for="emerald-calm"> </span> Esmeralda Suave</button>
+          <button class="menu-item menu-bg-opt" data-bg="crimson-cross"><span class="item-icon bg-check" data-for="crimson-cross"> </span> Carmesim Santa Ceia</button>
+          <button class="menu-item menu-bg-opt" data-bg="solid-dark"><span class="item-icon bg-check" data-for="solid-dark"> </span> Preto Sólido (0% GPU)</button>
+          <hr class="menu-divider">
+          <button class="menu-item" id="mi-toggle-uppercase"><span class="item-icon" id="icon-uppercase-check"> </span> Exibir Letras em MAIÚSCULAS</button>
+          <button class="menu-item" id="mi-toggle-chords"><span class="item-icon">🎸</span> Cifras e Comunicação de Palco</button>
+          <button class="menu-item" id="mi-toggle-alerts"><span class="item-icon">💬</span> Painel de Avisos e Sorteio</button>
         </div>
       </div>
 
       <!-- Menu: Bíblia -->
       <div class="menu-root" id="m-root-bible">
         <span class="menu-title">Bíblia</span>
-        <div class="macos-dropdown" id="m-drop-bible" style="display: none;">
+        <div class="macos-dropdown" id="m-drop-bible" style="display: none; min-width: 280px;">
           <button class="menu-item" id="mi-bible-nav"><span class="item-icon">📖</span> Navegador Bíblico Visual... <span class="shortcut">F3</span></button>
           <hr class="menu-divider">
           <button class="menu-item bible-ver-item" data-ver="acf"><span class="item-icon">✓</span> Almeida Corrigida Fiel (ACF)</button>
           <button class="menu-item bible-ver-item" data-ver="arc"><span class="item-icon"> </span> Almeida Revista e Corrigida (ARC)</button>
           <button class="menu-item bible-ver-item" data-ver="tb"><span class="item-icon"> </span> Tradução Brasileira (TB)</button>
           <hr class="menu-divider">
-          <button class="menu-item" id="mi-import-bible"><span class="item-icon">📂</span> Importar Tradução Bíblica (XML)...</button>
+          <button class="menu-item" id="mi-import-bible"><span class="item-icon">📂</span> Importar Tradução Bíblica (XML / OSIS / Zefania)...</button>
         </div>
       </div>
 
       <!-- Menu: Letras -->
       <div class="menu-root" id="m-root-lyrics">
         <span class="menu-title">Letras</span>
-        <div class="macos-dropdown" id="m-drop-lyrics" style="display: none;">
+        <div class="macos-dropdown" id="m-drop-lyrics" style="display: none; min-width: 260px;">
           <button class="menu-item" id="mi-web-lyrics"><span class="item-icon">🌐</span> Buscar Louvores na Web... <span class="shortcut">⌘L</span></button>
+          <button class="menu-item" id="mi-offline-library"><span class="item-icon">📚</span> Biblioteca Offline (Itens Baixados)...</button>
           <button class="menu-item" id="mi-harpa-lyrics"><span class="item-icon">🎵</span> Harpa Cristã (640 Hinos)</button>
           <button class="menu-item" id="mi-new-lyrics"><span class="item-icon">✍️</span> Criar Nova Letra...</button>
         </div>
@@ -89,7 +124,7 @@
         <span class="menu-title">Ajuda</span>
         <div class="macos-dropdown" id="m-drop-help" style="display: none;">
           <button class="menu-item" id="mi-shortcuts-help"><span class="item-icon">⌨️</span> Guia de Atalhos do Teclado...</button>
-          <button class="menu-item" id="mi-about-help"><span class="item-icon">📖</span> Documentação do OpenPresenter</button>
+          <button class="menu-item" id="mi-about-help"><span class="item-icon">📖</span> Documentação do Altaris</button>
         </div>
       </div>
     </nav>
@@ -101,8 +136,7 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="5 3 19 12 5 21 5 3"></polygon>
         </svg>
-        <span class="brand-title">OpenPresenter</span>
-        <span class="brand-badge" style="font-size: 0.65rem; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 2px 6px; border-radius: 6px; font-weight: 700;">PRO 7</span>
+        <span class="brand-title">Altaris</span>
       </div>
 
       <!-- Center: Spotlight Search Bar -->
@@ -135,42 +169,63 @@
           </div>
         </div>
 
-        <!-- Bible Version Selector -->
-        <div style="position: relative;">
-          <button id="btn-bible-pill" class="btn" title="Alternar tradução da Bíblia">
-            <span>📖</span>
-            <span id="label-active-bible" style="font-weight: 700; font-size: 0.75rem;">ACF</span>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
-          </button>
-          <div id="popover-bible-versions" class="macos-menu-popover" style="display: none; min-width: 320px; right: 0; padding: 8px;">
-            <button id="btn-popover-open-visual-bible" class="menu-item" style="font-weight: 700; color: #34d399; background: rgba(52, 211, 153, 0.15); border: 1px solid rgba(52, 211, 153, 0.35); border-radius: 8px; padding: 9px 12px; margin-bottom: 6px; width: 100%; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
-              <span style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.15rem;">📖</span>
-                <span>Abrir Navegador Bíblico...</span>
-              </span>
-              <span class="spotlight-kbd" style="font-size: 0.7rem;">F3</span>
+        <!-- Instant Bible Version Switcher (3 Versões Mais Usadas + Menu de Seleção Completo) -->
+        <div class="bible-segmented-pill" id="top-bible-segmented-pill" style="position: relative;" title="Trocar tradução da Bíblia instantaneamente">
+          <span style="font-size: 0.8rem; padding: 0 4px 0 6px;">📖</span>
+          <div id="top-bible-buttons-list" style="display: inline-flex; align-items: center; gap: 2px;">
+            <button class="bible-seg-btn active" data-fast-bible="acf">ACF</button>
+            <button class="bible-seg-btn" data-fast-bible="nvi">NVI</button>
+            <button class="bible-seg-btn" data-fast-bible="arc">ARC</button>
+          </div>
+          <button id="btn-top-more-bibles" class="bible-seg-btn" style="color: #34d399; font-weight: 800; padding: 2px 7px;" title="Todas as traduções instaladas">+</button>
+
+          <!-- Popover com todas as versões da Bíblia para seleção rápida -->
+          <div id="popover-more-bibles" class="macos-menu-popover" style="display: none; min-width: 270px; right: 0; top: calc(100% + 6px);">
+            <div style="padding: 4px 8px; font-size: 0.7rem; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em;">Traduções da Bíblia</div>
+            <div id="popover-more-bibles-list" style="display: flex; flex-direction: column; gap: 2px; max-height: 280px; overflow-y: auto;"></div>
+            <hr class="menu-divider" style="margin: 6px 0;">
+            <button id="btn-popover-open-bible-settings" class="menu-item" style="font-size: 0.78rem; padding: 6px 8px;">
+              <span class="item-icon">⚙️</span> Gerenciar & Baixar Bíblias...
             </button>
+          </div>
+        </div>
 
-            <div style="padding: 6px 10px; font-size: 0.7rem; font-weight: 700; color: #818cf8; border-top: 1px solid var(--border-subtle); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em;">Traduções da Bíblia</div>
+        <!-- Direct macOS Safari Settings / Advanced Menu Trigger -->
+        <button id="btn-top-settings" class="btn" title="Abrir Ajustes e Recursos Avançados (⌘,)">
+          <span>⚙️</span>
+          <span>Ajustes</span>
+        </button>
+
+        <!-- Botão Apoiar o Projeto (Doação / Pix) -->
+        <button id="btn-top-donate" class="btn" style="color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.08); font-weight: 600;" title="Apoiar o Desenvolvimento do Altaris (Pix / Mercado Pago)">
+          <span>☕</span>
+          <span>Apoiar</span>
+        </button>
+
+        <!-- Hidden legacy Bible popover refs for safe DOM compatibility -->
+        <div style="display: none;">
+          <button id="btn-bible-pill"><span id="label-active-bible">ACF</span></button>
+          <div id="popover-bible-versions">
+            <button id="btn-popover-open-visual-bible"></button>
             <div id="popover-bible-list"></div>
-
-            <div style="padding: 6px; border-top: 1px solid var(--border-subtle); margin-top: 4px;">
-              <label for="input-bible-popover-file" class="menu-item" style="cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; gap: 8px;">
-                <span>📂</span> Importar Tradução Bíblica (XML / JSON)...
-              </label>
-              <input type="file" id="input-bible-popover-file" accept=".xml,.json" style="display: none;">
-            </div>
+            <input type="file" id="input-bible-popover-file" accept=".xml,.json">
           </div>
         </div>
 
         <div style="width: 1px; height: 22px; background: var(--border-subtle); margin: 0 4px;"></div>
 
-        <!-- Emergency / Panic Controls -->
-        <button id="btn-clear-text" class="btn btn-ghost" title="Ocultar texto da tela sem apagar fundo (Atalho: C / F2)">Limpar Texto</button>
-        <button id="btn-blackout" class="btn btn-ghost" title="Apagar todas as telas com tela preta (Atalho: B / F1)">Blackout</button>
-        <button id="btn-toggle-live" class="btn btn-live active" title="Alternar projeção ao vivo">
+        <!-- Emergency / Panic Controls (Apple HIG Standardized Buttons) -->
+        <button id="btn-clear-text" class="btn btn-ghost top-action-btn" title="Ocultar texto da tela sem apagar fundo (Atalho: C / F2)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          <span>Limpar Texto</span>
+        </button>
+        <button id="btn-blackout" class="btn btn-ghost top-action-btn" title="Apagar todas as telas com tela preta (Atalho: B / F1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="9" x2="15" y1="9" y2="15"/><line x1="15" x2="9" y1="9" y2="15"/></svg>
+          <span>Blackout</span>
+        </button>
+        <button id="btn-toggle-live" class="btn btn-live active top-action-btn" title="Alternar projeção ao vivo">
           <span class="live-dot"></span>
-          AO VIVO
+          <span>AO VIVO</span>
         </button>
       </div>
     </header>
@@ -179,30 +234,34 @@
     <main class="workspace">
       <!-- Coluna 1: Culto de Hoje (Ordem do Culto) -->
       <section class="column glass-panel">
-        <div class="panel-header">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-weight: 700; color: #fff;">Culto de Hoje</span>
-            <span id="playlist-count-badge" style="font-size: 0.7rem; color: #64748b;">(4 itens)</span>
+        <div class="panel-header" style="gap: 6px;">
+          <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0;">
+            <span style="font-weight: 700; color: #fff; font-size: 0.88rem;">Culto de Hoje</span>
+            <span id="playlist-count-badge" style="font-size: 0.7rem; color: #94a3b8; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 10px;">4 itens</span>
           </div>
           
-          <!-- Mode Toggle: 2 Cliques vs 1 Clique -->
-          <button id="btn-toggle-click-mode" class="pill-mode-btn active" title="Clique para alternar entre modo seguro (2 cliques: 1º engatilha na prévia, 2º projeta) ou modo direto">
-            🔒 2 Cliques (Engatilhar)
+          <!-- Mode Toggle: 1 Clique (Direto) vs 2 Cliques -->
+          <button id="btn-toggle-click-mode" class="pill-mode-btn" style="white-space: nowrap; flex-shrink: 0;" title="Clique para alternar entre modo direto (1 clique projeta) ou modo seguro (2 cliques: 1º engatilha na prévia, 2º projeta)">
+            ⚡ 1 Clique
           </button>
-          <input type="checkbox" id="toggle-two-click" checked style="display: none;">
+          <input type="checkbox" id="toggle-two-click" style="display: none;">
         </div>
 
         <div class="panel-content">
-          <!-- Quick Add Pills Row (Bíblia, Web, Harpa, Nova Letra) -->
+          <!-- Quick Add Pills Row (Bíblia, Web, Salvos, Harpa, Letra, Mídia) -->
           <div class="quick-pills-row">
-            <button id="pill-quick-bible" class="quick-pill"><span class="pill-icon">📖</span> Bíblia</button>
-            <button id="pill-quick-web" class="quick-pill"><span class="pill-icon">🌐</span> Web</button>
-            <button id="pill-quick-harpa" class="quick-pill"><span class="pill-icon">🎵</span> Harpa</button>
-            <button id="pill-quick-new" class="quick-pill"><span class="pill-icon">✍️</span> Letra</button>
+            <button id="pill-quick-bible" class="quick-pill" title="Abrir Navegador Bíblico Visual (F3)"><span class="pill-icon">📖</span> Bíblia</button>
+            <button id="pill-quick-web" class="quick-pill" title="Buscar Letras na Web"><span class="pill-icon">🌐</span> Web</button>
+            <button id="pill-quick-library" class="quick-pill" style="border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7;" title="Abrir Biblioteca de Itens Baixados e Importados (100% Offline)"><span class="pill-icon">📚</span> Salvos</button>
+            <button id="pill-quick-harpa" class="quick-pill" title="Harpa Cristã (640 Hinos)"><span class="pill-icon">🎵</span> Harpa</button>
+            <button id="pill-quick-new" class="quick-pill" title="Criar Nova Letra"><span class="pill-icon">✍️</span> Letra</button>
+            <button id="pill-quick-media" class="quick-pill" title="Adicionar Imagens, Vídeos, PDFs ou Slides PowerPoint/ODP (requer LibreOffice)"><span class="pill-icon">🖼️</span> Mídia</button>
           </div>
+          <input type="file" id="input-quick-media-files" accept="image/*,video/*,application/pdf,.pdf,.pptx,.ppt,.odp,.pps,.ppsx,.key,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint" multiple style="display: none;">
 
           <!-- Playlist Cards -->
           <div id="playlist-container" style="display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto;"></div>
+
 
           <!-- Add Item Primary Action -->
           <button id="btn-add-item" class="btn-add-worship">
@@ -267,16 +326,17 @@
           </div>
 
           <!-- Tabbed Drawer (OBS, Avisos, Cifras) -->
-          <div class="drawer-tabs">
-            <button id="tab-drawer-obs" class="drawer-tab-btn active">📺 OBS Stream</button>
-            <button id="tab-drawer-alert" class="drawer-tab-btn">💬 Avisos Rápidos</button>
-            <button id="tab-drawer-chords" class="drawer-tab-btn">🎸 Tom / Cifras</button>
+          <div class="drawer-tabs" style="display: flex; gap: 4px; flex-wrap: nowrap;">
+            <button id="tab-drawer-obs" class="drawer-tab-btn active" style="flex: 1; white-space: nowrap; font-size: 0.72rem; padding: 6px 4px;">📺 OBS Stream</button>
+            <button id="tab-drawer-alert" class="drawer-tab-btn" style="flex: 1; white-space: nowrap; font-size: 0.72rem; padding: 6px 4px;">💬 Avisos</button>
+            <button id="tab-drawer-chords" class="drawer-tab-btn" style="flex: 1; white-space: nowrap; font-size: 0.72rem; padding: 6px 4px;">🎸 Tom / Cifras</button>
           </div>
 
           <!-- Pane 1: OBS Live Stream Settings -->
           <div id="pane-drawer-obs" style="display: flex; flex-direction: column; gap: 8px;">
-            <div style="aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-subtle);">
+            <div style="aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-subtle); position: relative;">
               <canvas id="canvas-stream-preview" style="width: 100%; height: 100%; object-fit: contain;" width="640" height="360"></canvas>
+              <div id="drawer-obs-custom-html-container" style="display: none; position: absolute; inset: 0; pointer-events: none; overflow: hidden; width: 100%; height: 100%;"></div>
             </div>
             
             <div style="display: flex; gap: 6px;">
@@ -284,6 +344,8 @@
                 <option value="glass-pill">Estilo Glass Pill (Moderno)</option>
                 <option value="clean-minimal">Minimalista Sem Fundo</option>
                 <option value="full-width">Barra de TV (Transmissão)</option>
+                <option value="bible-box">Caixa de Sermão Bíblico</option>
+                <option value="custom-html">✨ HTML / CSS Customizado</option>
               </select>
               <label for="input-church-logo" class="btn" style="padding: 5px 10px; font-size: 0.75rem; cursor: pointer;" title="Carregar Logotipo da Igreja">
                 📷 Logo
@@ -302,17 +364,25 @@
             </div>
           </div>
 
-          <!-- Pane 2: Avisos Rápidos -->
+          <!-- Pane 2: Avisos Rápidos & Sorteios -->
           <div id="pane-drawer-alert" style="display: none; flex-direction: column; gap: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 0.75rem; color: var(--text-secondary);">Contagem Regressiva:</span>
+              <span style="font-size: 0.72rem; color: var(--text-secondary);">Contagem / Sorteio:</span>
               <div style="display: flex; gap: 4px;">
-                <button id="btn-countdown-5m" class="btn" style="padding: 2px 8px; font-size: 0.7rem;">⏱ 5 min</button>
-                <button id="btn-countdown-3m" class="btn" style="padding: 2px 8px; font-size: 0.7rem;">⏱ 3 min</button>
+                <button id="btn-countdown-5m" class="btn" style="padding: 2px 7px; font-size: 0.68rem;">⏱ 5m</button>
+                <button id="btn-countdown-3m" class="btn" style="padding: 2px 7px; font-size: 0.68rem;">⏱ 3m</button>
+                <button id="btn-random-draw" class="btn" style="padding: 2px 7px; font-size: 0.68rem; color: #fbbf24; border-color: rgba(251,191,36,0.35);" title="Sortear número ou nome configurado">🎲 Sortear</button>
+                <button id="btn-drawer-raffle-settings" class="btn" style="padding: 2px 6px; font-size: 0.68rem; color: #a5b4fc;" title="Configurar Sorteio Avançado (Intervalo de números ou tabela de nomes)">⚙️</button>
               </div>
             </div>
+
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+              <button class="btn quick-alert-preset" data-msg="Favor silenciar os celulares durante o culto." style="font-size: 0.65rem; padding: 2px 6px;">📵 Celulares</button>
+              <button class="btn quick-alert-preset" data-msg="Pais: atenção ao chamado do Ministério Infantil." style="font-size: 0.65rem; padding: 2px 6px;">👶 Berçário</button>
+              <button class="btn quick-alert-preset" data-msg="Solicitamos ao proprietário do veículo estacionado na saída que o retire." style="font-size: 0.65rem; padding: 2px 6px;">🚗 Veículo</button>
+            </div>
             
-            <textarea id="alert-input" placeholder="Ex: Crianças do maternal favor comparecer..." style="width: 100%; height: 70px; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px; color: #fff; font-size: 0.82rem; outline: none; resize: none;"></textarea>
+            <textarea id="alert-input" placeholder="Ex: Crianças do maternal favor comparecer..." style="width: 100%; height: 58px; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px; color: #fff; font-size: 0.8rem; outline: none; resize: none;"></textarea>
             
             <div style="display: flex; gap: 6px;">
               <button id="btn-send-alert" class="btn btn-primary" style="flex: 1; justify-content: center;">📢 Exibir no Telão</button>
@@ -320,16 +390,26 @@
             </div>
           </div>
 
-          <!-- Pane 3: Tom e Cifras (Palco) -->
-          <div id="pane-drawer-chords" style="display: none; flex-direction: column; gap: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-tertiary); border-radius: 8px;">
-              <span style="font-size: 0.8rem; color: var(--text-secondary);">Tom no Retorno dos Músicos:</span>
-              <span id="label-current-key" style="font-family: monospace; font-size: 0.95rem; font-weight: 700; color: var(--stage-chord);">Original (0)</span>
+          <!-- Pane 3: Tom, Cifras & Painel de Comunicação com o Palco -->
+          <div id="pane-drawer-chords" style="display: none; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-tertiary); border-radius: 8px;">
+              <span style="font-size: 0.78rem; color: var(--text-secondary);">Tom no Palco:</span>
+              <span id="label-current-key" style="font-family: monospace; font-size: 0.9rem; font-weight: 700; color: var(--stage-chord);">Original (0)</span>
             </div>
             <div style="display: flex; gap: 6px;">
-              <button id="btn-key-down" class="btn" style="flex: 1; justify-content: center; padding: 8px;">−1 Semitom</button>
-              <button id="btn-key-reset" class="btn" style="flex: 1; justify-content: center; padding: 8px;">Restaurar</button>
-              <button id="btn-key-up" class="btn" style="flex: 1; justify-content: center; padding: 8px;">+1 Semitom</button>
+              <button id="btn-key-down" class="btn" style="flex: 1; justify-content: center; padding: 6px;">−1 Semitom</button>
+              <button id="btn-key-reset" class="btn" style="flex: 1; justify-content: center; padding: 6px;">Original</button>
+              <button id="btn-key-up" class="btn" style="flex: 1; justify-content: center; padding: 6px;">+1 Semitom</button>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-subtle); padding-top: 6px; margin-top: 2px;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: #fbbf24; margin-bottom: 4px;">💬 Mensagem Privada para o Palco / Púlpito:</div>
+              <input type="text" id="input-stage-cp-msg" placeholder="Ex: Encerrar em 2 min / Subir banda..." style="width: 100%; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 6px 8px; color: #fff; font-size: 0.78rem; outline: none; margin-bottom: 6px;">
+              <div style="display: flex; gap: 4px;">
+                <button id="btn-send-stage-cp" class="btn btn-primary" style="flex: 1; justify-content: center; padding: 5px; font-size: 0.75rem;">Enviar ao Palco</button>
+                <button id="btn-flash-stage-cp" class="btn" style="padding: 5px 8px; font-size: 0.75rem; color: #f87171; border-color: rgba(239,68,68,0.4);" title="Piscar tela do retorno de palco para chamar atenção">🚨 Piscar</button>
+                <button id="btn-clear-stage-cp" class="btn btn-ghost" style="padding: 5px 8px; font-size: 0.75rem;">Limpar</button>
+              </div>
             </div>
           </div>
         </div>
@@ -340,7 +420,7 @@
     <footer class="status-bar">
       <div style="display: flex; align-items: center; gap: 8px;">
         <span class="status-dot"></span>
-        <span>OpenPresenter v1.0 • Linux Nativo (Tauri v2 + Rust)</span>
+        <span id="footer-system-status">Sistema Pronto • Projeção & Transmissão</span>
       </div>
       <div>
         <span>Atalhos: <b>Espaço</b> = Próximo | <b>Seta Esquerda</b> = Anterior | <b>B</b> = Blackout | <b>C</b> = Limpar | <b>F3</b> = Bíblia | <b>⌘L</b> = Letras Web</span>
@@ -353,267 +433,844 @@
 
   <!-- QR Code Modal para Celular (Dedicado) -->
   <div id="modal-qr" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2500; align-items: center; justify-content: center;">
-    <div class="glass-panel" style="background: #111827; padding: 24px; border-radius: 16px; width: 360px; text-align: center; border: 1px solid var(--border-accent); box-shadow: 0 25px 60px rgba(0,0,0,0.8);">
+    <div class="glass-panel" style="background: #111827; padding: 24px; border-radius: 16px; width: 370px; text-align: center; border: 1px solid var(--border-accent); box-shadow: 0 25px 60px rgba(0,0,0,0.8); display: flex; flex-direction: column; align-items: center;">
       <div style="font-size: 2rem; margin-bottom: 6px;">📱</div>
       <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 8px;">Controle Remoto no Celular</h3>
       <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px;">Conecte o celular ao mesmo Wi-Fi da igreja e aponte a câmera para controlar a apresentação:</p>
-      <div style="background: #fff; padding: 12px; border-radius: 12px; display: inline-block; margin-bottom: 16px;">
-        <div id="qr-image" style="width: 200px; height: 200px;"></div>
+      <div style="background: #ffffff; padding: 14px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.45);">
+        <div id="qr-image" style="width: 210px; height: 210px; display: flex; align-items: center; justify-content: center; overflow: hidden;"></div>
       </div>
-      <div id="qr-url-text" style="font-family: monospace; font-size: 0.78rem; color: #818cf8; margin-bottom: 16px; word-break: break-all; background: rgba(99,102,241,0.1); padding: 8px; border-radius: 6px;"></div>
+      <div id="qr-url-text" style="width: 100%; font-family: monospace; font-size: 0.78rem; color: #818cf8; margin-bottom: 16px; word-break: break-all; background: rgba(99,102,241,0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(99,102,241,0.25);"></div>
       <button id="btn-close-qr" class="btn btn-primary" style="width: 100%; justify-content: center;">Fechar</button>
     </div>
   </div>
 
-  <!-- macOS Preferences / Ajustes Dialog (Image 5 style) -->
+  <!-- Loading HUD Modal (Apple Style - Feedback em Tempo Real) -->
+  <div id="modal-loading-hud" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.78); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 3500; align-items: center; justify-content: center;">
+    <div class="glass-panel" style="background: rgba(17, 24, 39, 0.94); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 32px 36px; width: 420px; max-width: 92vw; text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; gap: 14px;">
+      <div class="loading-hud-spinner"></div>
+      <div>
+        <h3 id="loading-hud-title" style="margin: 0 0 6px 0; font-size: 1.15rem; font-weight: 700; color: #fff;">Carregando Apresentação...</h3>
+        <p id="loading-hud-subtitle" style="margin: 0; font-size: 0.82rem; color: #94a3b8; line-height: 1.45;">Renderizando slides com layout original e nitidez máxima...</p>
+      </div>
+      <div style="width: 100%; background: rgba(255, 255, 255, 0.08); border-radius: 999px; height: 7px; overflow: hidden; margin-top: 4px;">
+        <div id="loading-hud-progress" style="width: 0%; height: 100%; background: linear-gradient(90deg, #6366f1, #38bdf8); border-radius: 999px; transition: width 0.2s ease;"></div>
+      </div>
+      <div id="loading-hud-count" style="font-size: 0.76rem; color: #64748b; font-family: monospace;">Aguarde um instante...</div>
+    </div>
+  </div>
+
+  <!-- macOS Safari Style Preferences / Ajustes Avançados Window -->
   <div id="modal-preferences" class="macos-prefs-modal">
     <div class="macos-prefs-window">
-      <!-- Top Apple Icon Toolbar -->
-      <div class="prefs-top-toolbar">
-        <button class="prefs-tab-btn active" data-tab="general"><span class="tab-icon">⚙️</span> Geral</button>
-        <button class="prefs-tab-btn" data-tab="bibles"><span class="tab-icon">📖</span> Bíblias</button>
-        <button class="prefs-tab-btn" data-tab="displays"><span class="tab-icon">📺</span> Telas</button>
-        <button class="prefs-tab-btn" data-tab="obs"><span class="tab-icon">📡</span> OBS Stream</button>
-        <button class="prefs-tab-btn" data-tab="remote"><span class="tab-icon">📱</span> Controle Remoto</button>
-        <button class="prefs-tab-btn" data-tab="shortcuts"><span class="tab-icon">⌨️</span> Atalhos</button>
-        <button class="prefs-tab-btn" data-tab="about"><span class="tab-icon">ℹ️</span> Sobre</button>
-        <button id="btn-close-prefs" class="btn btn-ghost" style="margin-left: auto; padding: 4px 10px; font-size: 1rem;">&times;</button>
+      <!-- 1. macOS Window Titlebar with Traffic Lights -->
+      <div class="macos-window-titlebar">
+        <div class="macos-traffic-lights">
+          <button id="btn-close-prefs" class="traffic-dot traffic-close" title="Fechar (Esc)"></button>
+          <span class="traffic-dot traffic-min"></span>
+          <span class="traffic-dot traffic-max"></span>
+        </div>
+        <div id="prefs-window-title" class="macos-window-title">Geral</div>
+        <div style="width: 70px;"></div>
       </div>
 
-      <!-- Preferences Body -->
+      <!-- 2. Top Apple Safari Icon Toolbar -->
+      <div class="prefs-top-toolbar">
+        <button class="prefs-tab-btn active" data-tab="general" data-title="Geral"><span class="tab-icon">⚙️</span> Geral</button>
+        <button class="prefs-tab-btn" data-tab="backgrounds" data-title="Fundos, Imagens & Vídeos"><span class="tab-icon">🎨</span> Fundos & Vídeos</button>
+        <button class="prefs-tab-btn" data-tab="media" data-title="Mídias, Slides & PDFs"><span class="tab-icon">🖼️</span> Mídias & PDF</button>
+        <button class="prefs-tab-btn" data-tab="obs" data-title="OBS Studio & HTML Customizado"><span class="tab-icon">🎥</span> OBS & HTML</button>
+        <button class="prefs-tab-btn" data-tab="remote" data-title="Controle Remoto & Palco"><span class="tab-icon">📱</span> Celular & Palco</button>
+        <button class="prefs-tab-btn" data-tab="bibles" data-title="Bíblias & Traduções"><span class="tab-icon">📖</span> Bíblias</button>
+        <button class="prefs-tab-btn" data-tab="raffle" data-title="Sorteios & Dinâmicas"><span class="tab-icon">🎲</span> Sorteios</button>
+        <button class="prefs-tab-btn" data-tab="shortcuts" data-title="Atalhos do Teclado"><span class="tab-icon">⌨️</span> Atalhos</button>
+        <button class="prefs-tab-btn" data-tab="about" data-title="Avançado & Sistema"><span class="tab-icon">🛠️</span> Avançado</button>
+      </div>
+
+      <!-- 3. Preferences Body (macOS 2-Column Form Layout) -->
       <div class="prefs-content-body">
-        <!-- Tab: Geral -->
+        <!-- Tab 1: Geral -->
         <div class="prefs-section" id="prefs-pane-general">
-          <div class="prefs-group">
-            <div class="prefs-row">
-              <div>
-                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Modo de Transição Padrão</div>
-                <div style="font-size: 0.75rem; color: #94a3b8;">1º clique engatilha na prévia, 2º clique projeta no telão</div>
-              </div>
-              <input type="checkbox" id="pref-two-click" checked>
+          <div class="macos-form-row">
+            <div class="macos-form-label">Proteção ao avançar slides:</div>
+            <div class="macos-form-control">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: #34d399; font-weight: 600; cursor: pointer;">
+                <input type="checkbox" id="pref-lock-current-item" checked>
+                <span>🔒 Travar avanço no item atual (Não pular sozinho para outro louvor ou versículo)</span>
+              </label>
+              <div class="macos-form-hint">Recomendado para voluntários: ao chegar no último slide de uma música, apertar Espaço/Próximo mantém na música atual sem invadir um versículo ou outro louvor por engano.</div>
             </div>
-            <div class="prefs-row">
-              <div>
-                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Leitura Bíblica Contínua</div>
-                <div style="font-size: 0.75rem; color: #94a3b8;">Carrega os versículos seguintes do capítulo para leitura ininterrupta</div>
-              </div>
-              <input type="checkbox" id="pref-continuous-bible" checked>
+          </div>
+
+          <hr class="macos-divider">
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Comportamento ao clicar no slide:</div>
+            <div class="macos-form-control">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: #fff; cursor: pointer;">
+                <input type="checkbox" id="pref-two-click" checked>
+                <span>Modo Seguro de 2 Cliques (1º clique engatilha em amarelo, 2º projeta ao vivo)</span>
+              </label>
+              <div class="macos-form-hint">Se desmarcado, clicar em qualquer card de slide projeta no telão imediatamente (1 clique).</div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Leitura Bíblica no culto:</div>
+            <div class="macos-form-control">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: #fff; cursor: pointer;">
+                <input type="checkbox" id="pref-continuous-bible" checked>
+                <span>Carregar capítulo inteiro automaticamente (Leitura Contínua)</span>
+              </label>
+              <div class="macos-form-hint">Permite continuar avançando versículo por versículo com Espaço se o pregador continuar lendo.</div>
+            </div>
+          </div>
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Relógio digital no telão:</div>
+            <div class="macos-form-control">
+              <select id="pref-select-clock" class="btn" style="min-width: 310px;">
+                <option value="none">Desativado (Ocultar relógio)</option>
+                <option value="topRight">Canto Superior Direito (Dark Glass)</option>
+                <option value="bottomRight">Canto Inferior Direito (Dark Glass)</option>
+                <option value="bottomLeft">Canto Inferior Esquerdo (Dark Glass)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Formatação das letras:</div>
+            <div class="macos-form-control">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: #fff; cursor: pointer;">
+                <input type="checkbox" id="pref-uppercase-lyrics">
+                <span>Transformar todas as letras e versículos em MAIÚSCULAS no telão</span>
+              </label>
             </div>
           </div>
         </div>
 
-        <!-- Tab: Bíblias -->
-        <div class="prefs-section" id="prefs-pane-bibles" style="display: none;">
-          <div class="prefs-group">
-            <div class="prefs-row">
-              <div>
-                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Tradução Padrão</div>
-                <div style="font-size: 0.75rem; color: #94a3b8;">Tradução utilizada nas buscas rápidas e projeção</div>
+        <!-- Tab 2: Fundos, Imagens Customizadas & Vídeos Animados -->
+        <div class="prefs-section" id="prefs-pane-backgrounds" style="display: none;">
+          <div class="macos-form-row">
+            <div class="macos-form-label">Tema de fundo ativo:</div>
+            <div class="macos-form-control">
+              <select id="pref-select-bg-theme" class="btn" style="min-width: 320px;">
+                <option value="nebula">🌌 Nebulosa Índigo Animada (Padrão)</option>
+                <option value="worship-gold">✨ Adoração Dourada (Quente)</option>
+                <option value="royal-blue">🌊 Azul Real Profundo</option>
+                <option value="emerald-calm">🌿 Esmeralda Suave</option>
+                <option value="crimson-cross">🍷 Carmesim Santa Ceia</option>
+                <option value="solid-dark">⬛ Preto Sólido (0% GPU)</option>
+                <option value="custom-image">🖼️ Imagem de Fundo Customizada</option>
+                <option value="custom-video">🎬 Vídeo Animado em Loop (Motion Background)</option>
+              </select>
+              <div class="macos-form-hint">O fundo escolhido é renderizado em tempo real atrás das letras e versículos no telão.</div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Imagem de fundo customizada:</div>
+            <div class="macos-form-control">
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <label for="input-pref-bg-image" class="btn btn-primary" style="cursor: pointer;">
+                  🖼️ Escolher Imagem (.JPG, .PNG, .WEBP)...
+                </label>
+                <input type="file" id="input-pref-bg-image" accept="image/*" style="display: none;">
+                <button id="btn-pref-clear-bg-image" class="btn btn-ghost" style="color: #f87171;">Remover</button>
               </div>
-              <select id="pref-default-bible" class="btn">
+              <!-- Status Visual da Imagem Selecionada -->
+              <div id="bg-image-selected-status" style="margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); font-size: 0.76rem; color: #94a3b8; display: inline-flex; align-items: center; gap: 8px;">
+                <span>⚪ Nenhuma imagem customizada selecionada</span>
+              </div>
+              <div class="macos-form-hint">Ao selecionar uma foto ou arte da igreja, ela passa a ser o fundo imediato do telão.</div>
+            </div>
+          </div>
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Vídeo animado (Motion Loop):</div>
+            <div class="macos-form-control">
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px;">
+                <button class="btn btn-preset-bg-video" data-video="/data/videos/bg1.mp4" data-label="Loop 1: Partículas HD" style="font-size: 0.75rem; padding: 5px 10px;">🎬 Loop 1: Partículas HD</button>
+                <button class="btn btn-preset-bg-video" data-video="/data/videos/bg2.mp4" data-label="Loop 2: Violão & Adoração" style="font-size: 0.75rem; padding: 5px 10px;">🎬 Loop 2: Violão & Adoração</button>
+                <button class="btn btn-preset-bg-video" data-video="/data/videos/bg3.mp4" data-label="Loop 3: Bíblia & Louvor Dourado" style="font-size: 0.75rem; padding: 5px 10px;">🎬 Loop 3: Bíblia & Louvor Dourado</button>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <label for="input-pref-bg-video" class="btn btn-primary" style="cursor: pointer;">
+                  📂 Escolher Outro Vídeo do Computador (.MP4, .WEBM)...
+                </label>
+                <input type="file" id="input-pref-bg-video" accept="video/mp4,video/webm,video/*" style="display: none;">
+                <button id="btn-pref-clear-bg-video" class="btn btn-ghost" style="color: #f87171;">Remover</button>
+              </div>
+              <!-- Status Visual do Vídeo Selecionado com Miniatura -->
+              <div id="bg-video-selected-status" style="margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); font-size: 0.76rem; color: #94a3b8; display: inline-flex; align-items: center; gap: 10px;">
+                <span>⚪ Nenhum vídeo em loop selecionado</span>
+              </div>
+              <div class="macos-form-hint">Reproduz vídeos animados em loop contínuo e silencioso atrás das letras.</div>
+            </div>
+          </div>
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Escurecimento do fundo:</div>
+            <div class="macos-form-control">
+              <div style="display: flex; align-items: center; gap: 12px; width: 320px;">
+                <input type="range" id="pref-bg-dimmer" min="0" max="90" value="45" style="flex: 1;">
+                <span id="label-bg-dimmer" style="font-family: monospace; font-size: 0.82rem; color: #38bdf8; width: 44px;">45%</span>
+              </div>
+              <div class="macos-form-hint">Aplica uma película escura suave sobre fotos e vídeos para garantir leitura perfeita das letras.</div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Fonte do telão:</div>
+            <div class="macos-form-control">
+              <select id="pref-select-font" class="btn" style="min-width: 320px;">
+                <option value="Inter, system-ui, sans-serif">Inter / San Francisco (Moderna & Limpa)</option>
+                <option value="Georgia, 'Times New Roman', serif">Georgia Serif (Clássica Bíblica)</option>
+                <option value="'Arial Black', Impact, sans-serif">Impact / Display (Forte para Louvor)</option>
+                <option value="'JetBrains Mono', monospace">JetBrains Mono (Técnica)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Tamanho da letra no telão:</div>
+            <div class="macos-form-control">
+              <div class="apple-segmented-group" id="seg-font-size-scale">
+                <button type="button" class="apple-segmented-btn active" data-val="normal">Normal</button>
+                <button type="button" class="apple-segmented-btn" data-val="large">Grande (+25%)</button>
+                <button type="button" class="apple-segmented-btn" data-val="max">Máximo (+50%)</button>
+              </div>
+              <div class="macos-form-hint">O tamanho se ajusta automaticamente para nunca cortar nenhuma palavra na tela.</div>
+            </div>
+          </div>
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Estilo do texto:</div>
+            <div class="macos-form-control">
+              <div class="apple-segmented-group" id="seg-font-style">
+                <button type="button" class="apple-segmented-btn" data-val="normal">Normal</button>
+                <button type="button" class="apple-segmented-btn active" data-val="bold">Negrito</button>
+                <button type="button" class="apple-segmented-btn" data-val="italic">Itálico</button>
+                <button type="button" class="apple-segmented-btn" data-val="boldItalic">Negrito + Itálico</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Legibilidade sobre vídeos:</div>
+            <div class="macos-form-control">
+              <div class="apple-segmented-group" id="seg-text-shadow">
+                <button type="button" class="apple-segmented-btn active" data-val="soft">Sombra Suave</button>
+                <button type="button" class="apple-segmented-btn" data-val="outline">Contorno Forte (Vídeos Claros)</button>
+                <button type="button" class="apple-segmented-btn" data-val="none">Sem Sombra</button>
+              </div>
+              <div class="macos-form-hint">O Contorno Forte adiciona traço nítido ao redor das letras, perfeito quando o vídeo de fundo tem clarões ou luzes fortes.</div>
+            </div>
+          </div>
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Título da música no telão:</div>
+            <div class="macos-form-control">
+              <div class="apple-segmented-group" id="seg-show-song-title">
+                <button type="button" class="apple-segmented-btn active" data-val="true">Exibir Título</button>
+                <button type="button" class="apple-segmented-btn" data-val="false">Ocultar Título</button>
+              </div>
+              <div class="macos-form-hint">Mostra o nome da música e autor no topo do primeiro slide.</div>
+            </div>
+          </div>
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Referência bíblica:</div>
+            <div class="macos-form-control">
+              <div class="apple-segmented-group" id="seg-bible-ref-format">
+                <button type="button" class="apple-segmented-btn active" data-val="header">No Topo (Cabeçalho)</button>
+                <button type="button" class="apple-segmented-btn" data-val="footer">No Rodapé</button>
+                <button type="button" class="apple-segmented-btn" data-val="inline">Em Linha (Ex: Jo 3:16)</button>
+              </div>
+              <div class="macos-form-hint">Define onde o livro, capítulo e versão bíblica aparecem durante a leitura da Palavra.</div>
+            </div>
+          </div>
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Cor principal da letra:</div>
+            <div class="macos-form-control">
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="color" id="pref-input-text-color" value="#ffffff" style="width: 42px; height: 32px; border: none; background: transparent; cursor: pointer;">
+                <button class="btn text-color-preset" data-color="#ffffff">Branco Puro</button>
+                <button class="btn text-color-preset" data-color="#fef08a" style="color: #fef08a;">Amarelo Ouro</button>
+                <button class="btn text-color-preset" data-color="#bae6fd" style="color: #bae6fd;">Azul Celeste</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Mídias, Imagens, Vídeos e Slides PDF na Ordem do Culto -->
+        <div class="prefs-section" id="prefs-pane-media" style="display: none;">
+          <div class="macos-form-row">
+            <div class="macos-form-label">Imagens e Cartazes de Aviso:</div>
+            <div class="macos-form-control">
+              <label for="input-media-images" class="btn btn-primary" style="cursor: pointer;">
+                🖼️ Adicionar Imagens / Slides ao Culto (Múltiplos arquivos)...
+              </label>
+              <input type="file" id="input-media-images" accept="image/*" multiple style="display: none;">
+              <div class="macos-form-hint">Selecione uma ou várias imagens (.JPG, .PNG, .WEBP). Elas entrarão na coluna "Culto de Hoje" prontas para projetar em tela cheia.</div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Vídeos para o Culto:</div>
+            <div class="macos-form-control">
+              <label for="input-media-video" class="btn btn-primary" style="cursor: pointer;">
+                🎬 Adicionar Vídeo (.MP4 / .WEBM) à Ordem do Culto...
+              </label>
+              <input type="file" id="input-media-video" accept="video/mp4,video/webm,video/*" style="display: none;">
+              <div class="macos-form-hint">Adiciona um vídeo (abertura, retrospectiva, testemunho) como item na Ordem do Culto.</div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Apresentações &amp; PDFs:</div>
+            <div class="macos-form-control">
+              <label for="input-media-pdf" class="btn btn-primary" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                <span>📄 Importar Slides (PDF / PowerPoint / Imagens)...</span>
+              </label>
+              <input type="file" id="input-media-pdf" accept=".pdf,application/pdf,.pptx,.ppt,.odp,.key,image/*" multiple style="display: none;">
+              <div class="macos-form-hint">Cada página do PDF ou slide da apresentação é convertida em telas de projeção de altíssima definição (1080p/4K).</div>
+
+              <!-- Card informativo: PDF Nativo vs Apresentação Direta via LibreOffice -->
+              <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 12px 14px; margin-top: 10px; font-size: 0.77rem; color: #cbd5e1; line-height: 1.5;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <b style="color: #a5b4fc; font-size: 0.8rem;">💡 Dica de Apresentações no Culto:</b>
+                  <span style="background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); font-size: 0.68rem; font-weight: 700; padding: 1px 7px; border-radius: 999px;">PDF 100% Nativo</span>
+                </div>
+                <div style="margin-bottom: 6px;">
+                  • <b>PDF (Recomendado / 100% Nativo):</b> Exporte sua apresentação (PowerPoint, Canva ou Google Slides) como <b>PDF</b> antes do culto. Abre instantaneamente, com máxima nitidez e sem depender de nenhum software externo instalado.
+                </div>
+                <div>
+                  • <b>Arquivos Diretos (.pptx / .odp):</b> Para abrir arquivos de PowerPoint diretamente com todas as artes e imagens preservadas, o <b>LibreOffice</b> precisa estar instalado na máquina para realizar a renderização de fundo.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: OBS Studio & Customizador HTML/CSS Avançado -->
+        <div class="prefs-section" id="prefs-pane-obs" style="display: none;">
+          <div class="macos-form-row">
+            <div class="macos-form-label">URL Browser Source (OBS):</div>
+            <div class="macos-form-control">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="text" id="obs-browser-url-input" readonly value="http://localhost:7878/stream.html" style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-subtle); color: #38bdf8; font-family: monospace; font-size: 0.82rem; padding: 6px 10px; border-radius: 6px; width: 290px;">
+                <button id="btn-copy-obs-url" class="btn btn-primary" style="padding: 6px 12px;">📋 Copiar URL</button>
+                <button id="btn-test-obs-url" class="btn" style="padding: 6px 12px;">🌐 Abrir</button>
+              </div>
+              <div class="macos-form-hint">Cole no OBS Studio em Fonte &rarr; Navegador (1920x1080, 60 FPS, Canal Alfa 100% transparente).</div>
+            </div>
+          </div>
+
+          <!-- Live OBS Mini-Preview -->
+          <div class="macos-form-row">
+            <div class="macos-form-label">Prévia ao Vivo:</div>
+            <div class="macos-form-control" style="width: 100%;">
+              <div class="obs-live-preview-box" id="obs-modal-preview-box">
+                <div class="obs-live-preview-element" id="obs-modal-preview-element" style="background: rgba(10, 14, 24, 0.88); backdrop-filter: blur(16px); border: 1px solid rgba(99, 102, 241, 0.45); border-left: 5px solid #6366f1; border-radius: 20px; padding: 10px 18px; color: #ffffff; text-align: center;">
+                  <div id="obs-preview-header" style="font-size: 10px; font-weight: 700; color: #a5b4fc; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px;">JOÃO 3:16 (ACF)</div>
+                  <div id="obs-preview-text" style="font-size: 13px; font-weight: 700; line-height: 1.3;">Porque Deus amou o mundo de tal maneira...</div>
+                </div>
+              </div>
+              <div class="macos-form-hint">Mostra exatamente como os títulos e versículos aparecem para os espectadores da live.</div>
+            </div>
+          </div>
+
+          <!-- OBS Shape / Formato -->
+          <div class="macos-form-row">
+            <div class="macos-form-label">Formato do Lower-Third:</div>
+            <div class="macos-form-control">
+              <div class="apple-segmented-group" id="seg-obs-shape">
+                <button type="button" class="apple-segmented-btn active" data-val="pill">Pílula Glass</button>
+                <button type="button" class="apple-segmented-btn" data-val="card">Card Flutuante</button>
+                <button type="button" class="apple-segmented-btn" data-val="full-width">Faixa Completa TV</button>
+                <button type="button" class="apple-segmented-btn" data-val="minimal">Sem Fundo (Minimal)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- OBS Position & Alignment -->
+          <div class="macos-form-row">
+            <div class="macos-form-label">Posição na Tela:</div>
+            <div class="macos-form-control">
+              <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <div class="apple-segmented-group" id="seg-obs-position">
+                  <button type="button" class="apple-segmented-btn active" data-val="bottom">Rodapé (Inferior)</button>
+                  <button type="button" class="apple-segmented-btn" data-val="top">Topo (Superior)</button>
+                </div>
+                <div class="apple-segmented-group" id="seg-obs-text-align">
+                  <button type="button" class="apple-segmented-btn active" data-val="center">Centro</button>
+                  <button type="button" class="apple-segmented-btn" data-val="left">Esquerda</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- OBS Colors: Background, Text, Accent -->
+          <div class="macos-form-row">
+            <div class="macos-form-label">Cores do Lower-Third:</div>
+            <div class="macos-form-control">
+              <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+                <!-- Fundo -->
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 0.74rem; color: #94a3b8;">Fundo:</span>
+                  <input type="color" id="pref-obs-bg-color-picker" value="#0a0e18" style="width: 32px; height: 28px; border: none; background: transparent; cursor: pointer;">
+                  <button type="button" class="btn obs-bg-preset" data-bg="rgba(10, 14, 24, 0.88)" style="padding: 2px 7px; font-size: 0.7rem;">Escuro 88%</button>
+                  <button type="button" class="btn obs-bg-preset" data-bg="rgba(0, 0, 0, 0.95)" style="padding: 2px 7px; font-size: 0.7rem;">Preto 95%</button>
+                  <button type="button" class="btn obs-bg-preset" data-bg="transparent" style="padding: 2px 7px; font-size: 0.7rem;">Transparente</button>
+                </div>
+                <!-- Texto -->
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 0.74rem; color: #94a3b8;">Texto:</span>
+                  <input type="color" id="pref-obs-text-color-picker" value="#ffffff" style="width: 32px; height: 28px; border: none; background: transparent; cursor: pointer;">
+                </div>
+                <!-- Borda / Destaque -->
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 0.74rem; color: #94a3b8;">Destaque:</span>
+                  <input type="color" id="pref-obs-accent-color-picker" value="#6366f1" style="width: 32px; height: 28px; border: none; background: transparent; cursor: pointer;">
+                  <button type="button" class="btn obs-accent-preset" data-accent="#6366f1" style="padding: 2px 7px; font-size: 0.7rem; color: #818cf8;">Índigo</button>
+                  <button type="button" class="btn obs-accent-preset" data-accent="#10b981" style="padding: 2px 7px; font-size: 0.7rem; color: #34d399;">Verde</button>
+                  <button type="button" class="btn obs-accent-preset" data-accent="#f59e0b" style="padding: 2px 7px; font-size: 0.7rem; color: #fbbf24;">Dourado</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- OBS Typography -->
+          <div class="macos-form-row">
+            <div class="macos-form-label">Tipografia do OBS:</div>
+            <div class="macos-form-control">
+              <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <div class="apple-segmented-group" id="seg-obs-font-size">
+                  <button type="button" class="apple-segmented-btn active" data-val="normal">Tamanho Normal</button>
+                  <button type="button" class="apple-segmented-btn" data-val="large">Grande (+20%)</button>
+                  <button type="button" class="apple-segmented-btn" data-val="huge">Gigante (+40%)</button>
+                </div>
+                <div class="apple-segmented-group" id="seg-obs-bold">
+                  <button type="button" class="apple-segmented-btn active" data-val="bold">Negrito</button>
+                  <button type="button" class="apple-segmented-btn" data-val="normal">Normal</button>
+                </div>
+                <div class="apple-segmented-group" id="seg-obs-show-header">
+                  <button type="button" class="apple-segmented-btn active" data-val="true">Exibir Cabeçalho</button>
+                  <button type="button" class="apple-segmented-btn" data-val="false">Ocultar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Logotipo no OBS -->
+          <div class="macos-form-row">
+            <div class="macos-form-label">Logotipo da Igreja no OBS:</div>
+            <div class="macos-form-control">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <label for="input-obs-logo-upload" class="btn" style="cursor: pointer;">📁 Escolher Logo (PNG)</label>
+                <input type="file" id="input-obs-logo-upload" accept="image/*" style="display: none;">
+                <button id="btn-obs-remove-logo" class="btn btn-ghost" style="color: #ef4444;">Remover Logo</button>
+              </div>
+              <div id="obs-logo-selected-status" style="margin-top: 6px; padding: 5px 10px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); font-size: 0.75rem; color: #94a3b8; display: inline-flex; align-items: center; gap: 8px;">
+                <span>⚪ Nenhum logotipo selecionado</span>
+              </div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <!-- Advanced Collapsible HTML/CSS Code Editor (Apple Details Accordion) -->
+          <details class="apple-accordion" id="obs-advanced-code-details">
+            <summary>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              <span>Personalização Avançada com Código HTML & CSS (Opcional)</span>
+            </summary>
+            <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+              <div class="macos-form-row" style="grid-template-columns: 180px 1fr;">
+                <div class="macos-form-label">Template HTML:<br><span style="font-size: 0.7rem; color: #64748b;">Variáveis: {{title}}, {{header}}, {{text}}, {{chords}}</span></div>
+                <div class="macos-form-control" style="width: 100%;">
+                  <textarea id="pref-obs-custom-html" style="width: 100%; height: 76px; background: #0d1017; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px; color: #34d399; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; outline: none; resize: vertical;"></textarea>
+                </div>
+              </div>
+              <div class="macos-form-row" style="grid-template-columns: 180px 1fr;">
+                <div class="macos-form-label">CSS Customizado:</div>
+                <div class="macos-form-control" style="width: 100%;">
+                  <textarea id="pref-obs-custom-css" style="width: 100%; height: 120px; background: #0d1017; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px; color: #93c5fd; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; outline: none; resize: vertical;"></textarea>
+                  <div style="display: flex; gap: 8px; margin-top: 4px;">
+                    <button id="btn-apply-obs-custom" class="btn btn-primary">✨ Aplicar HTML/CSS Manual</button>
+                    <button id="btn-reset-obs-custom" class="btn btn-ghost">Restaurar Código Padrão</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Tab 5: Controle Remoto & Palco -->
+        <div class="prefs-section" id="prefs-pane-remote" style="display: none;">
+          <div class="macos-form-row">
+            <div class="macos-form-label">Endereço para Celular:</div>
+            <div class="macos-form-control">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div id="pref-remote-url" style="font-family: monospace; font-size: 0.86rem; color: #38bdf8; background: rgba(0,0,0,0.35); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">http://localhost:7878/remote.html</div>
+                <button id="pref-btn-show-qr" class="btn btn-primary">📱 Abrir QR Code</button>
+              </div>
+              <div class="macos-form-hint">Qualquer celular no mesmo Wi-Fi da igreja pode passar slides, escolher músicas do culto e projetar versículos.</div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Monitores de Vídeo:</div>
+            <div class="macos-form-control">
+              <div id="prefs-displays-list" style="font-size: 0.82rem; color: #94a3b8;">Pronto para projetar no monitor secundário (F5 Telão / F6 Palco).</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 6: Bíblias & Central de Traduções (1-Clique Offline & Importador Legal) -->
+        <div class="prefs-section" id="prefs-pane-bibles" style="display: none;">
+          <div class="macos-form-row">
+            <div class="macos-form-label">Tradução Bíblica Ativa:</div>
+            <div class="macos-form-control">
+              <select id="pref-default-bible" class="btn" style="min-width: 320px;">
                 <option value="acf">Almeida Corrigida Fiel (ACF)</option>
                 <option value="arc">Almeida Revista e Corrigida (ARC)</option>
                 <option value="tb">Tradução Brasileira (TB)</option>
               </select>
+              <div class="macos-form-hint">Todas as versões instaladas aparecem automaticamente nos botões rápidos da barra superior!</div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Bíblias em Domínio Público:<br><span style="font-size: 0.68rem; color: #10b981;">✓ 100% Livres de Direitos Autorais</span></div>
+            <div class="macos-form-control" style="width: 100%;">
+              <div id="bible-public-domain-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;"></div>
+              <div class="macos-form-hint">Baixe em 1 clique para uso 100% offline permanente no computador da igreja.</div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <div class="macos-form-row">
+            <div class="macos-form-label">Outras Traduções &amp; Direitos Autorais:</div>
+            <div class="macos-form-control" style="width: 100%;">
+              <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.28); border-radius: 10px; padding: 10px 12px; font-size: 0.76rem; color: #cbd5e1; line-height: 1.45; margin-bottom: 8px;">
+                <b style="color: #818cf8;">⚖️ Nota de Direitos Autorais:</b> O Altaris distribui nativamente apenas traduções em Domínio Público. Traduções comerciais (como <b>NVI, NAA, NVT, NTLH, ARA, KJA</b>) pertencem às suas respectivas Sociedades Bíblicas. Caso sua igreja possua licença ou queira importar de um arquivo local / repositório externo de terceiros para uso offline no culto, utilize as opções abaixo:
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <label for="input-bible-popover-file" class="btn btn-primary" style="cursor: pointer;">
+                  📂 Importar Arquivo da Igreja (.XML Zefania / OpenSong / .JSON)...
+                </label>
+                <button id="btn-toggle-community-bibles" class="btn" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.35);">
+                  🌐 Conectar Repositório Comunitário Externo (NVI, NAA, NVT, NTLH...)
+                </button>
+              </div>
+              <div id="bible-community-external-box" style="display: none; margin-top: 10px; width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px;">
+                <div style="font-size: 0.74rem; color: #fbbf24; margin-bottom: 8px; font-weight: 600;">
+                  🌐 Fonte Externa (GitHub Community Mirror) — Baixe em 1 clique sob responsabilidade do usuário:
+                </div>
+                <div id="bible-community-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;"></div>
+              </div>
+              <div id="bible-download-status" style="margin-top: 6px; font-size: 0.78rem; color: #34d399; font-weight: 600; display: none;"></div>
             </div>
           </div>
         </div>
 
-        <!-- Tab: Telas -->
-        <div class="prefs-section" id="prefs-pane-displays" style="display: none;">
-          <div class="prefs-group">
-            <div style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 8px;">Monitores Detectados</div>
-            <div id="prefs-displays-list" style="font-size: 0.8rem; color: #94a3b8;">Detectando monitores disponíveis...</div>
+        <!-- Tab 7: Sorteios & Dinâmicas (Números personalizáveis & Tabela de Nomes) -->
+        <div class="prefs-section" id="prefs-pane-raffle" style="display: none;">
+          <!-- 1. Apple Segmented Mode: Números vs Nomes -->
+          <div class="macos-form-row">
+            <div class="macos-form-label">Tipo de Sorteio:</div>
+            <div class="macos-form-control">
+              <div class="apple-segmented-group" id="seg-raffle-mode">
+                <button type="button" class="apple-segmented-btn active" data-val="numbers">🔢 Sorteio por Números</button>
+                <button type="button" class="apple-segmented-btn" data-val="names">👥 Tabela com Nomes de Participantes</button>
+              </div>
+              <div class="macos-form-hint">Alterne entre sortear bilhetes numerados (ex: 1 a 200) ou uma lista personalizada de nomes da congregação.</div>
+            </div>
           </div>
-        </div>
 
-        <!-- Tab: OBS Stream (Configurações Avançadas) -->
-        <div class="prefs-section" id="prefs-pane-obs" style="display: none;">
-          <div class="prefs-group">
-            <div style="font-weight: 700; font-size: 0.95rem; color: #fff; margin-bottom: 4px;">Configurações Avançadas de Transmissão (OBS Web / vMix)</div>
-            <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 16px;">Camada de sobreposição com canal alfa transparente e renderização via GPU a 60 FPS.</div>
-
-            <div class="prefs-row">
-              <div style="flex: 1;">
-                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Endereço da Fonte de Navegador (Browser Source)</div>
-                <div style="font-size: 0.75rem; color: #94a3b8;">Cole exatamente este link no campo "URL" da fonte no OBS:</div>
-                <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
-                  <input type="text" id="obs-browser-url-input" readonly value="http://localhost:7878/stream.html" style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-subtle); color: #38bdf8; font-family: monospace; font-size: 0.82rem; padding: 6px 10px; border-radius: 6px; width: 280px;">
-                  <button id="btn-copy-obs-url" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.78rem;">📋 Copiar URL</button>
-                  <button id="btn-test-obs-url" class="btn" style="padding: 6px 12px; font-size: 0.78rem;">🌐 Testar</button>
+          <!-- 2. Sub-Panel: Números (Intervalo Personalizável) -->
+          <div id="raffle-subpanel-numbers" style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="macos-form-row">
+              <div class="macos-form-label">Intervalo de Números:</div>
+              <div class="macos-form-control">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <span style="font-size: 0.8rem; color: #94a3b8;">Do número:</span>
+                  <input type="number" id="pref-raffle-min" value="1" min="1" max="999999" class="btn" style="width: 85px; padding: 5px 8px; font-weight: 700; color: #38bdf8;">
+                  <span style="font-size: 0.8rem; color: #94a3b8;">Até o número:</span>
+                  <input type="number" id="pref-raffle-max" value="200" min="1" max="999999" class="btn" style="width: 95px; padding: 5px 8px; font-weight: 700; color: #fbbf24;">
+                </div>
+                <!-- Atalhos rápidos de intervalo -->
+                <div style="display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
+                  <span style="font-size: 0.72rem; color: #64748b; align-self: center;">Predefinições:</span>
+                  <button type="button" class="btn btn-raffle-range-preset" data-min="1" data-max="50" style="padding: 2px 7px; font-size: 0.7rem;">1 a 50</button>
+                  <button type="button" class="btn btn-raffle-range-preset" data-min="1" data-max="100" style="padding: 2px 7px; font-size: 0.7rem;">1 a 100</button>
+                  <button type="button" class="btn btn-raffle-range-preset active" data-min="1" data-max="200" style="padding: 2px 7px; font-size: 0.7rem; color: #fbbf24;">1 a 200</button>
+                  <button type="button" class="btn btn-raffle-range-preset" data-min="1" data-max="500" style="padding: 2px 7px; font-size: 0.7rem;">1 a 500</button>
+                  <button type="button" class="btn btn-raffle-range-preset" data-min="1" data-max="1000" style="padding: 2px 7px; font-size: 0.7rem;">1 a 1000</button>
                 </div>
               </div>
             </div>
 
-            <div class="prefs-row">
-              <div>
-                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Tema Visual do Lower Third no OBS</div>
-                <div style="font-size: 0.75rem; color: #94a3b8;">Estilo da barra de texto projetada sobre a câmera</div>
+            <div class="macos-form-row">
+              <div class="macos-form-label">Regra de repetição:</div>
+              <div class="macos-form-control">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #e2e8f0; cursor: pointer;">
+                  <input type="checkbox" id="pref-raffle-no-repeat" checked>
+                  <span>Não repetir números já sorteados nesta sessão</span>
+                </label>
               </div>
-              <select id="pref-select-obs-theme" class="btn" style="padding: 6px 10px;">
-                <option value="glass-pill">Pílula Glassmorphism Flutuante</option>
-                <option value="clean-minimal">Minimalista com Contorno Forte (Sem Fundo)</option>
-                <option value="full-width">Faixa Inferior Completa (Lower Third Largo)</option>
-              </select>
             </div>
+          </div>
 
-            <div class="prefs-row">
-              <div>
-                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Transparência do Fundo (Alpha Channel)</div>
-                <div style="font-size: 0.75rem; color: #94a3b8;">Fundo transparente para não tampar a filmagem dos pregadores/louvor</div>
-              </div>
-              <span style="font-size: 0.75rem; font-weight: 700; color: #10b981; background: rgba(16,185,129,0.15); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(16,185,129,0.3);">✓ 100% Transparente</span>
-            </div>
-
-            <div class="prefs-row">
-              <div>
-                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Logotipo da Igreja no OBS</div>
-                <div style="font-size: 0.75rem; color: #94a3b8;">Aparecerá automaticamente na lateral da faixa no OBS</div>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <label for="input-obs-logo-upload" class="btn" style="cursor: pointer; font-size: 0.78rem;">📁 Escolher Imagem (PNG)</label>
-                <input type="file" id="input-obs-logo-upload" accept="image/*" style="display: none;">
-                <button id="btn-obs-remove-logo" class="btn btn-ghost" style="font-size: 0.75rem; color: #ef4444;">Remover</button>
+          <!-- 3. Sub-Panel: Tabela de Nomes -->
+          <div id="raffle-subpanel-names" style="display: none; flex-direction: column; gap: 10px;">
+            <div class="macos-form-row">
+              <div class="macos-form-label">Adicionar Participantes:<br><span style="font-size: 0.7rem; color: #64748b;">(Cole 1 nome por linha)</span></div>
+              <div class="macos-form-control" style="width: 100%;">
+                <textarea id="pref-raffle-names-input" placeholder="Cole aqui os nomes dos participantes (um por linha)&#10;Ex:&#10;Lucas Gabriel&#10;Mariana Costa&#10;Pr. Carlos Eduardo&#10;Beatriz Oliveira..." style="width: 100%; height: 80px; background: #0d1017; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px; color: #34d399; font-family: monospace; font-size: 0.78rem; outline: none; resize: vertical;"></textarea>
+                <div style="display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
+                  <button type="button" id="btn-raffle-add-names" class="btn btn-primary" style="padding: 4px 10px; font-size: 0.72rem;">➕ Importar Nomes</button>
+                  <button type="button" id="btn-raffle-load-sample" class="btn" style="padding: 4px 10px; font-size: 0.72rem;">📋 Carregar Exemplo (10 Nomes)</button>
+                  <button type="button" id="btn-raffle-clear-names" class="btn btn-ghost" style="padding: 4px 10px; font-size: 0.72rem; color: #ef4444;">🗑️ Limpar Lista</button>
+                  <button type="button" id="btn-raffle-shuffle-names" class="btn" style="padding: 4px 10px; font-size: 0.72rem;">🔀 Embaralhar</button>
+                </div>
               </div>
             </div>
 
-            <div style="margin-top: 16px; padding: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); border-radius: 8px;">
-              <div style="font-weight: 700; font-size: 0.8rem; color: #818cf8; margin-bottom: 6px;">💡 Configuração Ideal Recomendada no OBS Studio:</div>
-              <ul style="font-size: 0.75rem; color: #94a3b8; line-height: 1.5; padding-left: 18px; margin: 0;">
-                <li>No OBS: Adicione Fonte <b>Navegador (Browser Source)</b> e cole a URL acima</li>
-                <li>Largura: <b>1920</b> | Altura: <b>1080</b></li>
-                <li>Taxa de FPS: <b>60</b></li>
-                <li>Marque a opção: <i>"Atualizar o navegador quando a cena se tornar ativa"</i></li>
-              </ul>
+            <!-- Tabela Visual de Nomes Cadastrados -->
+            <div class="macos-form-row">
+              <div class="macos-form-label">
+                Participantes:<br>
+                <span id="raffle-names-counter" style="font-size: 0.72rem; color: #38bdf8; font-weight: 700;">10 cadastrados</span>
+              </div>
+              <div class="macos-form-control" style="width: 100%;">
+                <div style="max-height: 160px; overflow-y: auto; width: 100%; border: 1px solid var(--border-subtle); border-radius: 8px; background: rgba(0,0,0,0.25);">
+                  <table class="raffle-names-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 38px;">#</th>
+                        <th>Nome / Participante</th>
+                        <th style="width: 90px; text-align: center;">Status</th>
+                        <th style="width: 44px; text-align: center;">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody id="raffle-names-tbody">
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <!-- 4. Área de Ação e Sorteio Ao Vivo (Stage Card) -->
+          <div class="macos-form-row">
+            <div class="macos-form-label">Realizar Sorteio:</div>
+            <div class="macos-form-control" style="width: 100%;">
+              <div class="raffle-stage-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;" id="raffle-current-mode-label">SORTEIO ATIVO: NÚMEROS (1 A 200)</span>
+                  <label style="display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: #cbd5e1; cursor: pointer;">
+                    <input type="checkbox" id="pref-raffle-suspense" checked>
+                    <span>Efeito Suspense (Roleta rápida)</span>
+                  </label>
+                </div>
+
+                <div class="raffle-result-display" id="raffle-result-display">
+                  <span>Pronto para sortear</span>
+                </div>
+
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px;">
+                  <button type="button" id="btn-raffle-trigger-now" class="btn btn-primary" style="padding: 8px 20px; font-size: 0.85rem; font-weight: 700; background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);">
+                    🎲 SORTEAR AGORA!
+                  </button>
+                  <button type="button" id="btn-raffle-project-screen" class="btn" style="padding: 8px 14px; font-size: 0.82rem; color: #34d399; border-color: rgba(52, 211, 153, 0.4);">
+                    📢 Projetar no Telão
+                  </button>
+                  <button type="button" id="btn-raffle-copy-alert" class="btn btn-ghost" style="padding: 8px 12px; font-size: 0.78rem;">
+                    💬 Enviar p/ Avisos
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Histórico de Ganhadores -->
+          <div class="macos-form-row">
+            <div class="macos-form-label">Ganhadores Anteriores:</div>
+            <div class="macos-form-control" style="width: 100%;">
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+                <span id="raffle-winners-count" style="font-size: 0.74rem; color: #94a3b8;">Nenhum ganhador nesta sessão</span>
+                <button type="button" id="btn-raffle-reset-history" class="btn btn-ghost" style="padding: 2px 8px; font-size: 0.7rem; color: #f87171;">Zerar Histórico</button>
+              </div>
+              <div id="raffle-winners-list" style="display: flex; gap: 6px; flex-wrap: wrap; min-height: 28px; width: 100%;"></div>
             </div>
           </div>
         </div>
 
-        <!-- Tab: Controle Remoto -->
-        <div class="prefs-section" id="prefs-pane-remote" style="display: none;">
-          <div class="prefs-group">
-            <div class="prefs-row">
-              <div>
-                <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Endereço de Acesso Local</div>
-                <div id="pref-remote-url" style="font-family: monospace; font-size: 0.8rem; color: #818cf8;">Carregando...</div>
-              </div>
-              <button id="pref-btn-show-qr" class="btn btn-primary" style="padding: 4px 12px;">Ver QR Code</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab: Atalhos do Teclado -->
+        <!-- Tab 8: Atalhos do Teclado -->
         <div class="prefs-section" id="prefs-pane-shortcuts" style="display: none;">
-          <div class="prefs-group">
-            <div style="font-weight: 700; font-size: 0.95rem; color: #fff; margin-bottom: 4px;">Guia Completo de Atalhos do Teclado</div>
-            <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 16px;">Comandos rápidos para operar o culto com agilidade, compatível com passadores de slide sem fio (Logitech).</div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
-                <div>
-                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Próximo Slide</div>
-                  <div style="font-size: 0.7rem; color: #94a3b8;">Avança letra ou versículo</div>
-                </div>
-                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">Espaço / ➔ / PageDown</span>
-              </div>
-
-              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
-                <div>
-                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Slide Anterior</div>
-                  <div style="font-size: 0.7rem; color: #94a3b8;">Retorna para o slide anterior</div>
-                </div>
-                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">Backspace / ⬅ / PageUp</span>
-              </div>
-
-              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
-                <div>
-                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Limpar Texto</div>
-                  <div style="font-size: 0.7rem; color: #94a3b8;">Oculta a letra mantendo o fundo</div>
-                </div>
-                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">F1</span>
-              </div>
-
-              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
-                <div>
-                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Blackout Total</div>
-                  <div style="font-size: 0.7rem; color: #94a3b8;">Escurece totalmente o telão</div>
-                </div>
-                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">F2 ou B</span>
-              </div>
-
-              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
-                <div>
-                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Navegador Bíblico Visual</div>
-                  <div style="font-size: 0.7rem; color: #94a3b8;">Livros, capítulos e versículos</div>
-                </div>
-                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">F3</span>
-              </div>
-
-              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
-                <div>
-                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Projetor do Telão</div>
-                  <div style="font-size: 0.7rem; color: #94a3b8;">Abre a janela de saída para o público</div>
-                </div>
-                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">F5</span>
-              </div>
-
-              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
-                <div>
-                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Retorno de Palco</div>
-                  <div style="font-size: 0.7rem; color: #94a3b8;">Monitor dos músicos e pregadores</div>
-                </div>
-                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">F6</span>
-              </div>
-
-              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
-                <div>
-                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Busca Rápida Spotlight</div>
-                  <div style="font-size: 0.7rem; color: #94a3b8;">Foca imediatamente a barra de busca</div>
-                </div>
-                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">⌘K / Ctrl+K</span>
-              </div>
-
-              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
-                <div>
-                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Buscar Louvores na Web</div>
-                  <div style="font-size: 0.7rem; color: #94a3b8;">Abre busca online Vagalume/Cifras</div>
-                </div>
-                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">⌘L / Ctrl+L</span>
-              </div>
-
-              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
-                <div>
-                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Preferências / Ajustes</div>
-                  <div style="font-size: 0.7rem; color: #94a3b8;">Configurações do sistema</div>
-                </div>
-                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">⌘, / Ctrl+,</span>
-              </div>
-
-              <div class="prefs-row" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;">
-                <div>
-                  <div style="font-weight: 600; font-size: 0.8rem; color: #fff;">Fechar Menus e Janelas</div>
-                  <div style="font-size: 0.7rem; color: #94a3b8;">Volta para a operação principal</div>
-                </div>
-                <span class="spotlight-kbd" style="padding: 4px 8px; font-size: 0.72rem;">Esc</span>
-              </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="prefs-row" style="background: rgba(0,0,0,0.28); border-radius: 8px; padding: 10px 14px;">
+              <div><div style="font-weight: 600; font-size: 0.82rem; color: #fff;">Próximo Slide</div><div style="font-size: 0.72rem; color: #94a3b8;">Avança letra ou versículo</div></div>
+              <span class="spotlight-kbd">Espaço / ➔ / PageDown</span>
+            </div>
+            <div class="prefs-row" style="background: rgba(0,0,0,0.28); border-radius: 8px; padding: 10px 14px;">
+              <div><div style="font-weight: 600; font-size: 0.82rem; color: #fff;">Slide Anterior</div><div style="font-size: 0.72rem; color: #94a3b8;">Volta um slide</div></div>
+              <span class="spotlight-kbd">Backspace / ⬅ / PageUp</span>
+            </div>
+            <div class="prefs-row" style="background: rgba(0,0,0,0.28); border-radius: 8px; padding: 10px 14px;">
+              <div><div style="font-weight: 600; font-size: 0.82rem; color: #fff;">Limpar Texto</div><div style="font-size: 0.72rem; color: #94a3b8;">Oculta texto mantendo fundo</div></div>
+              <span class="spotlight-kbd">F1 ou C</span>
+            </div>
+            <div class="prefs-row" style="background: rgba(0,0,0,0.28); border-radius: 8px; padding: 10px 14px;">
+              <div><div style="font-weight: 600; font-size: 0.82rem; color: #fff;">Blackout Total</div><div style="font-size: 0.72rem; color: #94a3b8;">Escurece o telão</div></div>
+              <span class="spotlight-kbd">F2 ou B</span>
+            </div>
+            <div class="prefs-row" style="background: rgba(0,0,0,0.28); border-radius: 8px; padding: 10px 14px;">
+              <div><div style="font-weight: 600; font-size: 0.82rem; color: #fff;">Navegador Bíblico</div><div style="font-size: 0.72rem; color: #94a3b8;">Abre livros e capítulos</div></div>
+              <span class="spotlight-kbd">F3</span>
+            </div>
+            <div class="prefs-row" style="background: rgba(0,0,0,0.28); border-radius: 8px; padding: 10px 14px;">
+              <div><div style="font-weight: 600; font-size: 0.82rem; color: #fff;">Telão / Palco</div><div style="font-size: 0.72rem; color: #94a3b8;">Abre janelas de saída</div></div>
+              <span class="spotlight-kbd">F5 / F6</span>
+            </div>
+            <div class="prefs-row" style="background: rgba(0,0,0,0.28); border-radius: 8px; padding: 10px 14px;">
+              <div><div style="font-weight: 600; font-size: 0.82rem; color: #fff;">Busca Spotlight</div><div style="font-size: 0.72rem; color: #94a3b8;">Pesquisa instantânea</div></div>
+              <span class="spotlight-kbd">⌘K / Ctrl+K</span>
+            </div>
+            <div class="prefs-row" style="background: rgba(0,0,0,0.28); border-radius: 8px; padding: 10px 14px;">
+              <div><div style="font-weight: 600; font-size: 0.82rem; color: #fff;">Ajustes Avançados</div><div style="font-size: 0.72rem; color: #94a3b8;">Abre esta janela macOS</div></div>
+              <span class="spotlight-kbd">⌘, / Ctrl+,</span>
             </div>
           </div>
         </div>
 
-        <!-- Tab: Sobre -->
+        <!-- Tab 8: Avançado & Sobre -->
         <div class="prefs-section" id="prefs-pane-about" style="display: none;">
-          <div style="text-align: center; padding: 20px;">
-            <div style="font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 4px;">OpenPresenter</div>
-            <div style="font-size: 0.85rem; color: #818cf8; margin-bottom: 12px;">Versão 1.0 (Linux x86_64)</div>
-            <p style="font-size: 0.8rem; color: #94a3b8; max-width: 480px; margin: 0 auto 16px;">
-              Software livre e nativo de projeção de letras e versículos bíblicos para igrejas, construído em Tauri v2, Rust e WebKitGTK. Alto desempenho, baixo consumo de RAM e compatibilidade total com ProPresenter, Holyrics e OpenLP.
-            </p>
-            <div style="font-size: 0.75rem; color: #64748b;">Desenvolvido com excelência para durar uma vida.</div>
+          <div class="macos-form-row">
+            <div class="macos-form-label">Modo PC Antigo (&lt;50MB):</div>
+            <div class="macos-form-control">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: #fff; cursor: pointer;">
+                <input type="checkbox" id="pref-low-spec-check">
+                <span>Desativar animações contínuas em repouso (0% uso de CPU/GPU parado)</span>
+              </label>
+              <div class="macos-form-hint">Ideal para notebooks antigos da igreja sem placa de vídeo dedicada.</div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <!-- Backup do Sistema & Culto -->
+          <div class="macos-form-row" style="align-items: flex-start;">
+            <div class="macos-form-label" style="display: flex; align-items: center; gap: 6px;">
+              <span>📦</span>
+              <span>Backup do Sistema:</span>
+            </div>
+            <div class="macos-form-control" style="width: 100%;">
+              <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 12px; padding: 14px 16px;">
+                <div style="font-weight: 700; color: #a5b4fc; font-size: 0.88rem; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                  <span>💾 Backup Geral Completo (Recomendado)</span>
+                </div>
+                <div style="font-size: 0.78rem; color: #cbd5e1; line-height: 1.45; margin-bottom: 12px;">
+                  Exporta todas as suas personalizações em um único arquivo: <strong>Biblioteca de Músicas Offline</strong>, temas visuais, planos de fundo/imagens, logo da igreja, <strong>estilos e HTML/CSS do OBS</strong>, sorteios, favoritos da Bíblia e o <strong>culto atual</strong>.
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button id="btn-full-backup-export" class="btn btn-primary" style="background: linear-gradient(135deg, #4f46e5, #6366f1); font-weight: 600; padding: 7px 14px; font-size: 0.82rem;">
+                    📦 Criar Backup Completo (.altaris-backup.json)
+                  </button>
+                  <button id="btn-full-backup-import" class="btn" style="background: rgba(255, 255, 255, 0.08); font-weight: 600; padding: 7px 14px; font-size: 0.82rem;">
+                    ♻️ Restaurar Backup Completo...
+                  </button>
+                </div>
+              </div>
+
+              <!-- Exportar apenas Roteiro do Culto -->
+              <div style="margin-top: 10px; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px 14px;">
+                <div style="font-weight: 600; color: #94a3b8; font-size: 0.82rem; margin-bottom: 3px;">
+                  📋 Apenas Roteiro de Culto de Domingo (.opw.json)
+                </div>
+                <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">
+                  Ideal para compartilhar somente a playlist do dia com outro operador, sem alterar as músicas ou configurações visuais do computador dele.
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button id="btn-pref-save-worship" class="btn" style="font-size: 0.78rem; padding: 5px 12px;">💾 Exportar Apenas Culto</button>
+                  <button id="btn-pref-load-worship" class="btn" style="font-size: 0.78rem; padding: 5px 12px;">📥 Carregar Culto...</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <!-- Seção de Apoio / Doação (Pix & Mercado Pago) -->
+          <div class="macos-form-row" style="align-items: flex-start;">
+            <div class="macos-form-label" style="display: flex; align-items: center; gap: 6px;">
+              <span>☕</span>
+              <span>Apoiar o Projeto:</span>
+            </div>
+            <div class="macos-form-control" style="width: 100%;">
+              <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(99, 102, 241, 0.08)); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 14px 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                  <div style="font-weight: 700; color: #fbbf24; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                    <span>💛</span> Contribua com o Altaris
+                  </div>
+                  <span style="font-size: 0.7rem; background: rgba(245, 158, 11, 0.18); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.35); padding: 2px 8px; border-radius: 999px; font-weight: 600;">
+                    Software Livre &amp; Gratuito
+                  </span>
+                </div>
+                <div style="font-size: 0.77rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 12px;">
+                  O <b>Altaris</b> é mantido com dedicação para abençoar igrejas e ministérios de forma 100% gratuita. Se este projeto ajuda o seu ministério e você deseja apoiar o desenvolvimento contínuo de novos recursos, sua contribuição voluntária via Pix é muito bem-vinda!
+                </div>
+
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <button id="btn-donate-open-link" class="btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700; border: none; padding: 8px 14px; font-size: 0.8rem; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); cursor: pointer;">
+                    ☕ Fazer um Pix / Doar
+                  </button>
+                  <button id="btn-donate-copy-link" class="btn" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; font-size: 0.78rem; padding: 8px 12px; cursor: pointer;">
+                    📋 Copiar Link Pix
+                  </button>
+                  <span id="donate-copy-feedback" style="display: none; font-size: 0.75rem; color: #34d399; font-weight: 600;">
+                    ✓ Link copiado!
+                  </span>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.72rem; color: #94a3b8; word-break: break-all;">
+                  Link direto: <code style="color: #fbbf24; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">link.mercadopago.com.br/johntechdicas</code>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="macos-divider">
+
+          <div style="text-align: center; padding: 16px 0 4px;">
+            <div style="font-size: 1.25rem; font-weight: 800; color: #fff;">Altaris</div>
+            <div style="font-size: 0.75rem; color: #64748b;">Compatibilidade de importação com arquivos ProPresenter®, Holyrics®, OpenLP e OBS Studio.</div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
 
   <!-- Modal Adicionar Item ao Culto -->
   <div id="modal-add-item" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); backdrop-filter: blur(10px); z-index: 2000; align-items: center; justify-content: center; padding: 16px;">
@@ -628,12 +1285,13 @@
       </div>
 
       <!-- Tabs Navigation -->
-      <div style="display: flex; gap: 6px; padding: 8px 16px; background: var(--bg-tertiary); border-bottom: 1px solid var(--border-subtle);">
-        <button id="tab-btn-bible" class="btn active-tab-btn" style="flex: 1; justify-content: center; font-size: 0.82rem; font-weight: 600;">📖 Bíblia Sagrada</button>
-        <button id="tab-btn-online" class="btn" style="flex: 1; justify-content: center; font-size: 0.82rem; font-weight: 600;">🌐 Letras na Web</button>
-        <button id="tab-btn-harpa" class="btn" style="flex: 1; justify-content: center; font-size: 0.82rem; font-weight: 600;">🎵 Harpa Cristã (640)</button>
-        <button id="tab-btn-custom" class="btn" style="flex: 1; justify-content: center; font-size: 0.82rem; font-weight: 600;">✍️ Nova Letra</button>
-        <button id="tab-btn-import" class="btn" style="flex: 1; justify-content: center; font-size: 0.82rem; font-weight: 600;">📂 Importar Arquivo</button>
+      <div class="modal-tabs-header">
+        <button id="tab-btn-bible" class="modal-nav-tab active-tab-btn">📖 Bíblia</button>
+        <button id="tab-btn-online" class="modal-nav-tab">🌐 Letras na Web</button>
+        <button id="tab-btn-library" class="modal-nav-tab">📚 Biblioteca Offline</button>
+        <button id="tab-btn-harpa" class="modal-nav-tab">🎵 Harpa (640)</button>
+        <button id="tab-btn-custom" class="modal-nav-tab">✍️ Nova Letra</button>
+        <button id="tab-btn-import" class="modal-nav-tab">📂 Importar</button>
       </div>
 
       <div style="padding: 16px; flex: 1; overflow-y: auto;">
@@ -680,7 +1338,7 @@
         <!-- Tab 2: Letras Online -->
         <div id="tab-pane-online" style="display: none;">
           <div style="margin-bottom: 12px;">
-            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Buscar qualquer louvor na internet (Pesquisa em Milhares de Louvores Nacionais e Internacionais):</label>
+            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Buscar qualquer louvor na internet (Ao clicar em Projetar/Adicionar, a letra é salva automaticamente 100% Offline!):</label>
             <div style="display: flex; gap: 8px;">
               <input type="text" id="input-online-search" placeholder="Ex: Bondade de Deus, Vitorioso És, A Casa é Sua, Me Atraiu, Fernandinho..." style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 0.9rem; outline: none;">
               <button id="btn-do-online-search" class="btn btn-primary" style="padding: 0 18px;">Buscar</button>
@@ -696,7 +1354,36 @@
             </div>
           </div>
 
-          <button id="btn-add-online-to-playlist" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; font-weight: 600;">Adicionar Música à Ordem do Culto</button>
+          <button id="btn-add-online-to-playlist" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; font-weight: 600;">Salvar na Biblioteca Offline &amp; Adicionar ao Culto</button>
+        </div>
+
+        <!-- Tab 2.5: Biblioteca Offline (Itens Baixados e Importados) -->
+        <div id="tab-pane-library" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: #6ee7b7; font-weight: 600;">
+              <span>🟢</span>
+              <span id="library-offline-stats-text">Biblioteca 100% Offline • Todos os itens abaixo já estão salvos neste computador e funcionam sem internet!</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <input type="text" id="input-library-search" placeholder="Filtrar louvores já baixados ou importados..." style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 7px 12px; color: #fff; font-size: 0.85rem; outline: none;">
+            <select id="select-library-category" class="btn" style="padding: 6px 10px; font-size: 0.78rem;">
+              <option value="all">Todos os Salvos Offline</option>
+              <option value="custom">Baixados da Web / Importados</option>
+              <option value="pack">Pacotes de Louvores Importados</option>
+              <option value="harpa">Harpa Cristã (640 Hinos)</option>
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div id="library-results-list" style="background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; height: 220px; overflow-y: auto;"></div>
+            <div id="library-lyrics-preview" style="background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; height: 220px; overflow-y: auto; font-size: 0.8rem; line-height: 1.45; color: #cbd5e1;">
+              Selecione um item salvo à esquerda para ver seus slides e estrofes.
+            </div>
+          </div>
+
+          <button id="btn-add-library-to-playlist" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; font-weight: 600;">+ Adicionar Item Selecionado ao Culto de Hoje</button>
         </div>
 
         <!-- Tab 3: Harpa Cristã -->
@@ -746,7 +1433,7 @@
             <textarea id="textarea-custom-lyrics" placeholder="Primeira estrofe...&#10;&#10;Coro da música...&#10;&#10;Segunda estrofe..." style="width: 100%; height: 160px; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px; color: #fff; font-size: 0.82rem; outline: none; resize: vertical; line-height: 1.4;"></textarea>
           </div>
 
-          <button id="btn-save-custom-song" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; font-weight: 600;">Salvar e Adicionar ao Culto</button>
+          <button id="btn-save-custom-song" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px; font-weight: 600;">Salvar na Biblioteca Offline e Adicionar ao Culto</button>
         </div>
 
         <!-- Tab 5: Importar Arquivos -->
@@ -754,13 +1441,13 @@
           <div style="padding: 24px; text-align: center; border: 2px dashed var(--border-subtle); border-radius: 12px; margin-bottom: 16px;">
             <span style="font-size: 2rem; display: block; margin-bottom: 8px;">📂</span>
             <div style="font-weight: 700; color: #f8fafc; margin-bottom: 4px;">Importar Hinos e Músicas de Outros Softwares</div>
-            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px;">Suporte nativo a ProPresenter (.pro4, .pro5, .pro6), OpenLyrics (.xml), Holyrics (.hly) e CCLI.</p>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px;">Suporte nativo a formatos de arquivo .mufl, .hly, .pro4, .pro5, .pro6, OpenLyrics (.xml), Bíblias (.json/.xml) e TXT.</p>
             <label for="input-file-import" class="btn btn-primary" style="padding: 8px 20px; cursor: pointer;">
               Selecionar Arquivo no Computador
             </label>
-            <input type="file" id="input-file-import" accept=".pro,.pro4,.pro5,.pro6,.xml,.json,.txt" style="display: none;">
+            <input type="file" id="input-file-import" accept=".mufl,.hly,.pro,.pro4,.pro5,.pro6,.xml,.json,.txt,.cho,.chordpro" style="display: none;">
           </div>
-          <div id="import-status-box" style="font-size: 0.8rem; color: #94a3b8; text-align: center;"></div>
+          <div id="import-status-box" style="font-size: 0.82rem; color: #94a3b8; text-align: center; padding: 10px; border-radius: 8px; background: rgba(16, 185, 129, 0.08); display: none;"></div>
         </div>
       </div>
     </div>
@@ -775,6 +1462,7 @@
           <span style="font-size: 1.2rem;">📖</span>
           <span style="font-weight: 700; font-size: 1.05rem; color: #fff;">Navegador Bíblico Visual</span>
           <span id="nav-active-version-badge" class="slide-badge-pill slide-badge-verse">ACF</span>
+          <button id="btn-nav-more-versions" class="btn" style="padding: 3px 10px; font-size: 0.72rem; color: #34d399; border-color: rgba(52, 211, 153, 0.35);">➕ Baixar / Mais Versões</button>
         </div>
         <button id="btn-close-bible-nav" class="btn" style="padding: 4px 10px; font-size: 1.2rem; line-height: 1;">&times;</button>
       </div>
@@ -817,6 +1505,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Toast de Confirmação de Importação & Biblioteca Offline -->
+  <div id="offline-toast-container" style="position: fixed; top: 88px; right: 20px; z-index: 4000; display: flex; flex-direction: column; gap: 8px; pointer-events: none;"></div>
 
   <script type="module" src="/src/ts/main.ts"></script>
 </body>

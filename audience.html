@@ -2,18 +2,74 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>OpenPresenter - Saída do Projetor</title>
+  <title>Altaris - Saída do Projetor</title>
   <style>
     body, html {
-      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: "Inter", system-ui, sans-serif;
+    }
+    #audience-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
     }
     canvas {
-      width: 100vw; height: 100vh; display: block; object-fit: contain;
+      position: relative;
+      z-index: 1;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      object-fit: contain;
+    }
+    .audience-floating-bar {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 50;
+      display: flex;
+      gap: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .audience-floating-bar.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    body.hide-cursor, body.hide-cursor * {
+      cursor: none !important;
+    }
+    .aud-btn {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #f8fafc;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .aud-btn:hover {
+      background: rgba(239, 68, 68, 0.9);
     }
   </style>
 </head>
 <body>
-  <canvas id="audience-canvas" width="1920" height="1080"></canvas>
+  <div id="audience-container">
+    <canvas id="audience-canvas" width="1920" height="1080"></canvas>
+  </div>
+  <div class="audience-floating-bar" id="audience-floating-bar">
+    <button id="btn-aud-fullscreen" class="aud-btn" title="Tela Cheia (Duplo Clique)">⛶ Tela Cheia</button>
+    <button id="btn-aud-close" class="aud-btn" title="Fechar Telão (Esc / F5)">✕ Fechar Telão</button>
+  </div>
   <script type="module" src="/src/ts/audience.ts"></script>
 </body>
 </html>

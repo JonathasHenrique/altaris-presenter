@@ -1,5 +1,5 @@
 {
-  "name": "open-presenter",
+  "name": "altaris",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "GPL-3.0-or-later",
   "description": "",
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.3",
@@ -21,6 +21,9 @@
   "dependencies": {
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-shell": "^2.5.0",
-    "lucide": "^1.58.0"
+    "@types/pdfjs-dist": "^2.10.377",
+    "jszip": "^3.10.2",
+    "lucide": "^1.58.0",
+    "pdfjs-dist": "^3.11.174"
   }
 }

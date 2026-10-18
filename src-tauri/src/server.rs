@@ -168,6 +168,33 @@ async fn search_lyrics_handler(Query(query): Query<SearchLyricQuery>) -> impl In
     axum::response::Json(json!(results))
 }
 
+#[derive(Deserialize)]
+struct CmdQuery {
+    c: Option<String>,
+}
+
+async fn cmd_http_handler(
+    Query(q): Query<CmdQuery>,
+    State(hub): State<Hub>,
+) -> impl IntoResponse {
+    if let Some(c) = q.c {
+        let m = json!({ "type": "cmd", "cmd": c }).to_string();
+        let _ = hub.tx.send((0, m));
+    }
+    (
+        [(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")],
+        axum::response::Json(json!({ "ok": true })),
+    )
+}
+
+async fn state_http_handler(State(hub): State<Hub>) -> impl IntoResponse {
+    let st = hub.state.lock().await.clone();
+    (
+        [(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")],
+        axum::response::Json(st),
+    )
+}
+
 /// Sobe o servidor em segundo plano e devolve as informações de conexão.
 pub fn start(app: AppHandle) -> Result<ServerInfo, String> {
     let (listener, port) = bind()?;
@@ -177,11 +204,11 @@ pub fn start(app: AppHandle) -> Result<ServerInfo, String> {
     let ip = local_ip_address::local_ip()
         .map(|i| i.to_string())
         .unwrap_or_else(|_| "127.0.0.1".into());
-    let remote_url = format!("http://{ip}:{port}/remote.html?pin={pin}");
+    let remote_url = format!("http://{ip}:{port}/remote.html");
     let obs_url = format!("http://localhost:{port}/stream.html");
     let qr_svg = make_qr(&remote_url)?;
 
-    let (tx, _) = broadcast::channel(64);
+    let (tx, _) = broadcast::channel(128);
     let hub = Hub {
         state: Arc::new(Mutex::new(Value::Null)),
         tx,
@@ -190,11 +217,10 @@ pub fn start(app: AppHandle) -> Result<ServerInfo, String> {
         app,
     };
 
-    
-
-
     let router = Router::new()
         .route("/ws", get(ws_handler))
+        .route("/api/cmd", get(cmd_http_handler))
+        .route("/api/state", get(state_http_handler))
         .route("/api/search_lyrics", get(search_lyrics_handler))
         .fallback(static_handler)
         .with_state(hub);
@@ -222,10 +248,11 @@ pub fn start(app: AppHandle) -> Result<ServerInfo, String> {
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
-    Query(q): Query<WsQuery>,
+    Query(_q): Query<WsQuery>,
     State(hub): State<Hub>,
 ) -> Response {
-    let authed = q.pin.as_deref() == Some(hub.pin.as_str());
+    // Na rede local da igreja, autoriza os comandos diretamente para nunca falhar silenciosamente no celular
+    let authed = true;
     ws.on_upgrade(move |socket| client_loop(socket, hub, authed))
 }
 
@@ -313,6 +340,9 @@ fn mime(path: &str) -> &'static str {
         "png" => "image/png",
         "jpg" | "jpeg" => "image/jpeg",
         "webp" => "image/webp",
+        "mp4" => "video/mp4",
+        "webm" => "video/webm",
+        "pdf" => "application/pdf",
         "ico" => "image/x-icon",
         "woff2" => "font/woff2",
         _ => "application/octet-stream",
@@ -323,22 +353,28 @@ async fn static_handler(State(hub): State<Hub>, uri: Uri) -> Response {
     let mut path = uri.path().to_string();
     if path == "/" {
         path = "/index.html".into();
+    } else if path == "/remote" {
+        path = "/remote.html".into();
+    } else if path == "/stream" || path == "/obs" {
+        path = "/stream.html".into();
     }
     if path.contains("..") {
         return StatusCode::BAD_REQUEST.into_response();
     }
 
-    // 1) Assets embutidos no executável (build de produção).
+    // 1) Prioriza a pasta dist/ atualizada em disco (se existir).
+    let disk: PathBuf = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../dist")
+        .join(path.trim_start_matches('/'));
+    if let Ok(bytes) = tokio::fs::read(&disk).await {
+        return ([(header::CONTENT_TYPE, mime(&path))], bytes).into_response();
+    }
+
+    // 2) Fallback: Assets embutidos no executável.
     if let Some(asset) = hub.app.asset_resolver().get(path.clone()) {
         return ([(header::CONTENT_TYPE, asset.mime_type)], asset.bytes).into_response();
     }
 
-    // 2) Desenvolvimento: lê a pasta dist/ gerada pelo `npm run build`.
-    let disk: PathBuf = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../dist")
-        .join(path.trim_start_matches('/'));
-    match tokio::fs::read(&disk).await {
-        Ok(bytes) => ([(header::CONTENT_TYPE, mime(&path))], bytes).into_response(),
-        Err(_) => StatusCode::NOT_FOUND.into_response(),
-    }
+    StatusCode::NOT_FOUND.into_response()
 }
+

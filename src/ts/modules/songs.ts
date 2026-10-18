@@ -1,4 +1,4 @@
-// OpenPresenter Song & Chord Transposition Engine with ProPresenter, OpenLP & Holyrics Importers
+// Altaris Song & Chord Transposition Engine with Multi-Format Importers
 import { Slide, PlaylistItem } from "../engine/state";
 
 
@@ -110,11 +110,116 @@ export const INITIAL_SONGS: Song[] = [
         chords: "G       A       Bm      F#m\nA Ele a glória, a Ele o domínio"
       }
     ]
+  },
+  {
+    id: "bondade-de-deus",
+    title: "Bondade de Deus",
+    artist: "Isaías Saad",
+    key: "G",
+    slides: [
+      {
+        label: "Verso 1",
+        category: "verse",
+        lyrics: "Te amo, Deus, Tua graça nunca falha\nTodos os dias eu estou em Tuas mãos\nDesde quando me levanto até eu me deitar\nEu cantarei da bondade de Deus",
+        chords: "G                  C\nTe amo, Deus, Tua graça nunca falha"
+      },
+      {
+        label: "Coro",
+        category: "chorus",
+        lyrics: "És fiel em todo tempo\nEm todo tempo Tu és tão, tão bom\nCom todo fôlego que tenho\nEu cantarei da bondade de Deus",
+        chords: "C                   G\nÉs fiel em todo tempo\nC                   G     D\nEm todo tempo Tu és tão, tão bom"
+      },
+      {
+        label: "Verso 2",
+        category: "verse",
+        lyrics: "Tua doce voz que me guia em meio ao fogo\nNa escuridão Tua presença me conforta\nSei que és meu Pai e que sou Teu amigo\nEu vivo na bondade de Deus",
+        chords: "G                        C\nTua doce voz que me guia em meio ao fogo"
+      },
+      {
+        label: "Ponte",
+        category: "bridge",
+        lyrics: "Tua bondade me seguirá\nMe seguirá, Senhor\nEu me rendo a Ti, Te dou tudo o que sou\nTua bondade me seguirá!",
+        chords: "C      D          G\nTua bondade me seguirá"
+      }
+    ]
+  },
+  {
+    id: "se-isso-nao-for-amor",
+    title: "Se Isso Não For Amor",
+    artist: "Luiz de Carvalho",
+    key: "C",
+    slides: [
+      {
+        label: "Verso 1",
+        category: "verse",
+        lyrics: "Deixou o esplendor de Sua glória\nSabendo o destino aqui\nEstava só e ferido no Gólgota\nPara dar Sua vida por mim",
+        chords: "C                    F\nDeixou o esplendor de Sua glória"
+      },
+      {
+        label: "Coro",
+        category: "chorus",
+        lyrics: "Se isso não for amor, o oceano secou\nNão há estrelas no céu, as andorinhas não voam mais\nSe isso não for amor, o céu não é real\nTudo perde o valor, se isso não for amor!",
+        chords: "C                     F\nSe isso não for amor, o oceano secou\nG                     C\nNão há estrelas no céu"
+      },
+      {
+        label: "Verso 2",
+        category: "verse",
+        lyrics: "Mesmo na morte lembrou-se\nDe um ladrão que a seu lado estava\nCom amor e ternura falou-lhe:\nHoje mesmo comigo estarás no paraíso!",
+        chords: "C                    F\nMesmo na morte lembrou-se"
+      }
+    ]
+  },
+  {
+    id: "a-casa-e-sua",
+    title: "A Casa É Sua",
+    artist: "Casa Worship",
+    key: "C",
+    slides: [
+      {
+        label: "Verso 1",
+        category: "verse",
+        lyrics: "Você é bem-vindo aqui\nA casa é Sua, pode entrar\nMe esvazio de mim\nMe esvazio de mim",
+        chords: "Am       F          C\nVocê é bem-vindo aqui"
+      },
+      {
+        label: "Coro",
+        category: "chorus",
+        lyrics: "Essa casa é Sua casa\nNós deixamos ela pra Você, Jesus\nEssa casa é Sua casa\nNós deixamos ela pra Você, Jesus!",
+        chords: "Am       F          C        G\nEssa casa é Sua casa"
+      },
+      {
+        label: "Ponte",
+        category: "bridge",
+        lyrics: "Apareça, que o Teu nome cresça\nEnche este lugar, enche este lugar\nApareça, que o Teu nome cresça\nVem me incendiar, vem me incendiar!",
+        chords: "F                  C\nApareça, que o Teu nome cresça"
+      }
+    ]
+  },
+  {
+    id: "me-atraiu",
+    title: "Me Atraiu",
+    artist: "Gabriela Rocha",
+    key: "G",
+    slides: [
+      {
+        label: "Verso 1",
+        category: "verse",
+        lyrics: "Eu poderia estar em qualquer outro lugar\nMas Tua glória me atraiu\nTua presença me atraiu",
+        chords: "C                     G\nEu poderia estar em qualquer outro lugar"
+      },
+      {
+        label: "Coro",
+        category: "chorus",
+        lyrics: "É que a sarça pegou fogo e não se consumiu\nE a voz que saiu dela um dia me atraiu\nE o meu coração queimou até que descobriu\nQue um dia com Tua glória vale mais que mil!",
+        chords: "C                     D\nÉ que a sarça pegou fogo e não se consumiu\nEm                    Bm\nE a voz que saiu dela um dia me atraiu"
+      }
+    ]
   }
 ];
 
 export class SongEngine {
   private static harpaSongs: Song[] = [];
+  private static packSongs: Song[] = [];
   private static customSongs: Song[] = [];
   private static isLoaded = false;
 
@@ -167,13 +272,40 @@ export class SongEngine {
     } catch (e) {
       console.warn("[SongEngine] Erro ao carregar harpa_crista_640.json:", e);
     }
+
+    try {
+      const packRes = await fetch("/data/songs/holyrics_pack.json");
+      if (packRes.ok) {
+        const rawPack: { title: string; artist: string; lyrics: string }[] = await packRes.json();
+        this.packSongs = rawPack.map((p, idx) => {
+          const s = this.parseLyricsToSong(p.title, p.artist || "Louvor", "C", p.lyrics);
+          s.id = `hpack-${idx}`;
+          return s;
+        });
+        console.log(`[SongEngine] ${this.packSongs.length} Louvores do Pacote Offline carregados`);
+      }
+    } catch (e) {
+      console.warn("[SongEngine] Erro ao carregar holyrics_pack.json:", e);
+    }
   }
 
   static loadCustomSongs(): void {
     try {
       const saved = localStorage.getItem("open_presenter_custom_songs");
       if (saved) {
-        this.customSongs = JSON.parse(saved);
+        const parsed: Song[] = JSON.parse(saved);
+        // Filtra músicas corrompidas ou packs gigantes (>80 slides) e re-divide músicas de 1 slide gigante
+        this.customSongs = parsed
+          .filter((s) => s && Array.isArray(s.slides) && s.slides.length <= 80 && !s.title.toLowerCase().includes("pack músicas"))
+          .map((s) => {
+            if (s.slides.length === 1 && s.slides[0].lyrics.split("\n").length > 4) {
+              const reparsed = this.parseLyricsToSong(s.title, s.artist, s.key || "C", s.slides[0].lyrics);
+              reparsed.id = s.id;
+              return reparsed;
+            }
+            return s;
+          });
+        localStorage.setItem("open_presenter_custom_songs", JSON.stringify(this.customSongs));
       }
     } catch (e) {
       console.warn("[SongEngine] Erro ao carregar customSongs de localStorage:", e);
@@ -181,7 +313,9 @@ export class SongEngine {
   }
 
   static saveCustomSong(song: Song): void {
-    const idx = this.customSongs.findIndex((s) => s.id === song.id);
+    const idx = this.customSongs.findIndex(
+      (s) => s.id === song.id || (s.title.toLowerCase() === song.title.toLowerCase() && s.artist.toLowerCase() === song.artist.toLowerCase())
+    );
     if (idx >= 0) {
       this.customSongs[idx] = song;
     } else {
@@ -190,8 +324,54 @@ export class SongEngine {
     localStorage.setItem("open_presenter_custom_songs", JSON.stringify(this.customSongs));
   }
 
+  static deleteCustomSong(id: string): void {
+    this.customSongs = this.customSongs.filter((s) => s.id !== id);
+    localStorage.setItem("open_presenter_custom_songs", JSON.stringify(this.customSongs));
+  }
+
+  static getCustomSongs(): Song[] {
+    return [...this.customSongs];
+  }
+
+  static setCustomSongs(songs: Song[]): void {
+    if (!Array.isArray(songs)) return;
+    this.customSongs = songs.filter((s) => s && s.title && Array.isArray(s.slides));
+    localStorage.setItem("open_presenter_custom_songs", JSON.stringify(this.customSongs));
+  }
+
+  static getOfflineLibraryStats(): { customCount: number; packCount: number; harpaCount: number; totalCount: number } {
+    const customCount = this.customSongs.length + INITIAL_SONGS.length;
+    const packCount = this.packSongs.length;
+    const harpaCount = this.harpaSongs.length;
+    return {
+      customCount,
+      packCount,
+      harpaCount,
+      totalCount: customCount + packCount + harpaCount
+    };
+  }
+
+  static getOfflineLibrarySongs(filter: string = "", category: "all" | "custom" | "pack" | "harpa" = "all"): { song: Song; isCustom: boolean; sourceLabel: string }[] {
+    const list: { song: Song; isCustom: boolean; sourceLabel: string }[] = [];
+    if (category === "all" || category === "custom") {
+      this.customSongs.forEach((s) => list.push({ song: s, isCustom: true, sourceLabel: "Baixado / Importado Offline" }));
+      INITIAL_SONGS.forEach((s) => list.push({ song: s, isCustom: false, sourceLabel: "Acervo Padrão Offline" }));
+    }
+    if (category === "all" || category === "pack") {
+      this.packSongs.forEach((s) => list.push({ song: s, isCustom: false, sourceLabel: "Pacote de Louvores Offline" }));
+    }
+    if (category === "harpa") {
+      this.harpaSongs.forEach((s) => list.push({ song: s, isCustom: false, sourceLabel: "Harpa Cristã Offline" }));
+    }
+    const q = filter.trim().toLowerCase();
+    if (!q) return list.slice(0, 120);
+    return list
+      .filter((item) => item.song.title.toLowerCase().includes(q) || item.song.artist.toLowerCase().includes(q))
+      .slice(0, 120);
+  }
+
   static getAllSongs(): Song[] {
-    return [...INITIAL_SONGS, ...this.customSongs, ...this.harpaSongs];
+    return [...INITIAL_SONGS, ...this.customSongs, ...this.packSongs, ...this.harpaSongs];
   }
 
   static findSongs(query: string): Song[] {
@@ -223,46 +403,69 @@ export class SongEngine {
     const q = query.trim();
     if (!q) return [];
 
-    // 1. Tentar comando nativo do Tauri
-    if (typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__) {
-      try {
-        const results = await (window as any).__TAURI_INTERNALS__.invoke("search_online_lyrics", { query: q });
-        if (Array.isArray(results) && results.length > 0) {
-          return results.map((item: any) => ({
-            id: item.id || Math.random(),
-            title: item.title || item.trackName || q,
-            artist: item.artist || item.artistName || "Desconhecido",
-            plainLyrics: item.plainLyrics || item.plain_lyrics || ""
-          }));
-        }
-      } catch (e) {
-        console.warn("Tauri search_online_lyrics:", e);
-      }
+    const combined: OnlineSearchResult[] = [];
+
+    // 0. Resultados instantâneos do banco local + Harpa Cristã (640 hinos)
+    const localMatches = this.findSongs(q).slice(0, 6);
+    for (const s of localMatches) {
+      combined.push({
+        id: Math.floor(Math.random() * 1000000),
+        title: s.title,
+        artist: `${s.artist} (Offline)`,
+        plainLyrics: s.slides.map((sl) => sl.lyrics).join("\n\n")
+      });
     }
 
-    // 2. Tentar proxy HTTP local (Axum embutido na porta 7878)
+    // 1. Busca direta na API LRCLIB (HTTPS CORS aberto, sem depender da porta local)
     try {
-      const port = (window as any).__OP_PORT__ || 7878;
-      const res = await fetch(`http://localhost:${port}/api/search_lyrics?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          return data.map((item: any) => ({
-            id: item.id || Math.random(),
-            title: item.title || item.trackName || q,
-            artist: item.artist || item.artistName || "Desconhecido",
-            plainLyrics: item.plainLyrics || item.plain_lyrics || ""
-          }));
+          for (const item of data) {
+            const lyrics = (item.plainLyrics || item.plain_lyrics || "").trim();
+            if (!lyrics) continue;
+            combined.push({
+              id: item.id || Math.random(),
+              title: item.trackName || item.title || q,
+              artist: item.artistName || item.artist || "Ministério de Louvor",
+              plainLyrics: lyrics
+            });
+          }
+          if (combined.length > 0) return combined;
         }
       }
     } catch (e) {
-      console.warn("Proxy local de letras:", e);
+      console.warn("LRCLIB direct search:", e);
     }
 
-    return [];
+    // 2. Fallback para proxy HTTP local (testa portas 7878 e 7879)
+    for (const port of [(window as any).__OP_PORT__ || 7878, 7879]) {
+      try {
+        const res = await fetch(`http://localhost:${port}/api/search_lyrics?q=${encodeURIComponent(q)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            for (const item of data) {
+              const lyrics = (item.plainLyrics || item.plain_lyrics || "").trim();
+              if (!lyrics) continue;
+              combined.push({
+                id: item.id || Math.random(),
+                title: item.title || item.trackName || q,
+                artist: item.artist || item.artistName || "Desconhecido",
+                plainLyrics: lyrics
+              });
+            }
+            if (combined.length > 0) return combined;
+          }
+        }
+      } catch {}
+    }
+
+    return combined;
   }
 
-  // ProPresenter 4 / 5 / 6 XML Parser
+  // ProPresenter 4 / 5 / 6 XML Parser (REA OpenLP + ProPresenter parity)
   static parseProPresenterXml(xmlText: string, fallbackTitle: string): Song {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlText, "text/xml");
@@ -273,6 +476,7 @@ export class SongEngine {
       root.getAttribute("title") ||
       fallbackTitle.replace(/\.[^/.]+$/, "");
     const artist =
+      root.getAttribute("author") ||
       root.getAttribute("CCLIAuthor") ||
       root.getAttribute("artist") ||
       root.getAttribute("CCLIArtistCredits") ||
@@ -282,26 +486,49 @@ export class SongEngine {
     const displaySlides = doc.querySelectorAll("RVDisplaySlide");
 
     displaySlides.forEach((s, idx) => {
-      const label = s.getAttribute("label") || `Slide ${idx + 1}`;
-      const textEl = s.querySelector("RVTextElement");
+      const parentGroup = s.closest("RVSlideGrouping");
+      const groupLabel = parentGroup?.getAttribute("name") || "";
+      const label = s.getAttribute("label") || groupLabel || `Slide ${idx + 1}`;
+      const textEls = s.querySelectorAll("RVTextElement");
       let lyrics = "";
 
-      const rtfB64 = textEl?.getAttribute("RTFData");
-      if (rtfB64) {
-        try {
-          const decoded = atob(rtfB64);
-          lyrics = this.stripRtf(decoded);
-        } catch {
-          lyrics = textEl?.textContent || "";
+      textEls.forEach((textEl) => {
+        if (lyrics.trim()) return;
+        const rtfB64 = textEl.getAttribute("RTFData");
+        if (rtfB64) {
+          try {
+            const decoded = atob(rtfB64);
+            lyrics = this.stripRtf(decoded);
+          } catch {
+            lyrics = textEl.textContent || "";
+          }
+        } else {
+          // ProPresenter 6 NSString ivar check
+          const nsStrings = textEl.querySelectorAll("NSString");
+          nsStrings.forEach((ns) => {
+            const ivar = ns.getAttribute("rvXMLIvarName");
+            if (ivar === "RTFData" && ns.textContent) {
+              try {
+                lyrics = this.stripRtf(atob(ns.textContent.trim()));
+              } catch {
+                /* ignore */
+              }
+            } else if (ivar === "PlainText" && ns.textContent && !lyrics) {
+              try {
+                lyrics = atob(ns.textContent.trim());
+              } catch {
+                lyrics = ns.textContent;
+              }
+            }
+          });
+          if (!lyrics) lyrics = textEl.textContent || "";
         }
-      } else if (textEl) {
-        lyrics = textEl.textContent || "";
-      }
+      });
 
       if (lyrics.trim()) {
         const lower = label.toLowerCase();
         const category: SongSlide["category"] =
-          lower.includes("coro") || lower.includes("chorus")
+          lower.includes("coro") || lower.includes("chorus") || lower.includes("refr")
             ? "chorus"
             : lower.includes("ponte") || lower.includes("bridge")
             ? "bridge"
@@ -328,7 +555,7 @@ export class SongEngine {
     };
   }
 
-  // OpenLyrics / OpenLP XML Parser
+  // OpenLyrics / OpenLP / OpenSong XML Parser
   static parseOpenLyricsXml(xmlText: string, fallbackTitle: string): Song {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlText, "text/xml");
@@ -341,34 +568,42 @@ export class SongEngine {
     const slides: SongSlide[] = [];
     const verses = doc.querySelectorAll("verse");
 
-    verses.forEach((vNode, idx) => {
-      const name = vNode.getAttribute("name") || `v${idx + 1}`;
-      const lines = Array.from(vNode.querySelectorAll("lines"))
-        .map((l) => l.textContent?.trim() || "")
-        .join("\n");
+    if (verses.length > 0) {
+      verses.forEach((vNode, idx) => {
+        const name = vNode.getAttribute("name") || `v${idx + 1}`;
+        const lines = Array.from(vNode.querySelectorAll("lines"))
+          .map((l) => l.textContent?.trim() || "")
+          .join("\n") || vNode.textContent?.trim() || "";
 
-      let category: SongSlide["category"] = "verse";
-      let label = `Verso ${idx + 1}`;
+        let category: SongSlide["category"] = "verse";
+        let label = `Verso ${idx + 1}`;
 
-      if (name.toLowerCase().startsWith("c")) {
-        category = "chorus";
-        label = "Coro";
-      } else if (name.toLowerCase().startsWith("b")) {
-        category = "bridge";
-        label = "Ponte";
+        if (name.toLowerCase().startsWith("c")) {
+          category = "chorus";
+          label = "Coro";
+        } else if (name.toLowerCase().startsWith("b")) {
+          category = "bridge";
+          label = "Ponte";
+        }
+
+        if (lines.trim()) {
+          slides.push({
+            label,
+            category,
+            lyrics: lines.trim()
+          });
+        }
+      });
+    } else {
+      // OpenSong XML (<song><lyrics>[V1]...</lyrics></song>)
+      const lyricsEl = doc.querySelector("lyrics");
+      if (lyricsEl && lyricsEl.textContent) {
+        return this.parseLyricsToSong(title, artist, "C", lyricsEl.textContent);
       }
-
-      if (lines.trim()) {
-        slides.push({
-          label,
-          category,
-          lyrics: lines.trim()
-        });
-      }
-    });
+    }
 
     if (slides.length === 0) {
-      throw new Error("Nenhuma estrofe encontrada no arquivo OpenLyrics.");
+      throw new Error("Nenhuma estrofe encontrada no arquivo XML.");
     }
 
     return {
@@ -381,49 +616,190 @@ export class SongEngine {
   }
 
   static parseLyricsToSong(title: string, artist: string, key: string, rawText: string): Song {
-    const id = `song-${Date.now()}`;
-    const blocks = rawText
+    const id = `song-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const normalized = rawText.replace(/\r\n/g, "\n");
+    const blocks = normalized
       .split(/\n\s*\n/)
       .map((b) => b.trim())
       .filter(Boolean);
     const slides: SongSlide[] = [];
 
-    blocks.forEach((block, idx) => {
-      let label = `Verso ${idx + 1}`;
+    blocks.forEach((block) => {
+      let label = `Verso ${slides.length + 1}`;
       let category: SongSlide["category"] = "verse";
 
-      const lower = block.toLowerCase();
-      if (lower.startsWith("coro:") || lower.startsWith("refrão:") || lower.startsWith("refrao:")) {
-        label = "Coro";
-        category = "chorus";
-        block = block.replace(/^(coro|refrão|refrao):\s*/i, "");
-      } else if (lower.startsWith("ponte:")) {
-        label = "Ponte";
-        category = "bridge";
-        block = block.replace(/^ponte:\s*/i, "");
+      // Holyrics comment line support: lines starting with // are stage/operator notes or section labels
+      const rawLines = block.split("\n");
+      const cleanLines: string[] = [];
+      let commentNote = "";
+
+      for (const ln of rawLines) {
+        if (ln.trim().startsWith("//")) {
+          const note = ln.trim().slice(2).trim();
+          if (note) commentNote = commentNote ? `${commentNote} | ${note}` : note;
+        } else if (ln.trim().length > 0) {
+          cleanLines.push(ln.trim());
+        }
       }
 
-      slides.push({
-        label,
-        category,
-        lyrics: block
-      });
+      if (cleanLines.length === 0) return;
+
+      if (commentNote) {
+        label = commentNote;
+      }
+
+      let fullBlock = cleanLines.join("\n").trim();
+      const lower = fullBlock.toLowerCase();
+      const lowerLabel = label.toLowerCase();
+      if (
+        lower.startsWith("coro:") ||
+        lower.startsWith("refrão:") ||
+        lower.startsWith("refrao:") ||
+        lower.startsWith("[coro]") ||
+        lowerLabel.includes("coro") ||
+        lowerLabel.includes("refr")
+      ) {
+        if (!commentNote) label = "Coro";
+        category = "chorus";
+        fullBlock = fullBlock.replace(/^(\[?coro\]?|refrão|refrao):?\s*/i, "");
+      } else if (
+        lower.startsWith("ponte:") ||
+        lower.startsWith("[ponte]") ||
+        lowerLabel.includes("ponte") ||
+        lowerLabel.includes("bridge")
+      ) {
+        if (!commentNote) label = "Ponte";
+        category = "bridge";
+        fullBlock = fullBlock.replace(/^(\[?ponte\]?):?\s*/i, "");
+      }
+
+      // Se a estrofe tiver mais de 4 linhas (ex: letra do LRCLIB sem linha em branco), divide em slides de 4 linhas!
+      const finalLines = fullBlock.split("\n").filter((l) => l.trim().length > 0);
+      if (finalLines.length > 4) {
+        for (let i = 0; i < finalLines.length; i += 4) {
+          const chunk = finalLines.slice(i, i + 4).join("\n");
+          const slideLabel = commentNote ? `${commentNote} (${Math.floor(i / 4) + 1})` : `${category === "chorus" ? "Coro" : "Verso"} ${slides.length + 1}`;
+          slides.push({
+            label: slideLabel,
+            category,
+            lyrics: chunk
+          });
+        }
+      } else {
+        slides.push({
+          label,
+          category,
+          lyrics: fullBlock
+        });
+      }
     });
 
     return { id, title: title.trim() || "Sem Título", artist: artist.trim() || "Igreja", key: key || "C", slides };
   }
 
-  // Universal File Importer
+  static parseHolyricsMuflBuffer(buf: ArrayBuffer): Song[] {
+    const bytes = new Uint8Array(buf);
+    const decoder = new TextDecoder("utf-8");
+    // Locate first "titleToSearch" followed by "xp"
+    const headerStr = decoder.decode(bytes.subarray(0, Math.min(bytes.length, 1024)));
+    const xpIdx = headerStr.indexOf("titleToSearch");
+    if (xpIdx === -1) return [];
+
+    // Find the first "xp" (0x78 0x70) after "titleToSearch"
+    let start = xpIdx;
+    while (start < bytes.length - 1 && !(bytes[start] === 0x78 && bytes[start + 1] === 0x70)) {
+      start++;
+    }
+    start += 2;
+
+    // Split records by 0x73 0x71 0x00 0x7e 0x00 0x02
+    const recordStarts: number[] = [start];
+    for (let i = start; i < bytes.length - 6; i++) {
+      if (
+        bytes[i] === 0x73 &&
+        bytes[i + 1] === 0x71 &&
+        bytes[i + 2] === 0x00 &&
+        bytes[i + 3] === 0x7e &&
+        bytes[i + 4] === 0x00 &&
+        bytes[i + 5] === 0x02
+      ) {
+        recordStarts.push(i + 6);
+      }
+    }
+
+    const songs: Song[] = [];
+    for (let r = 0; r < recordStarts.length; r++) {
+      const recStart = recordStarts[r];
+      const recEnd = r + 1 < recordStarts.length ? recordStarts[r + 1] - 6 : bytes.length;
+      let p = recStart + 32; // Skip 4 Java longs (32 bytes)
+      const strs: string[] = [];
+      while (p < recEnd) {
+        const t = bytes[p];
+        if (t === 0x74 && p + 3 <= recEnd) {
+          const len = (bytes[p + 1] << 8) | bytes[p + 2];
+          if (p + 3 + len <= recEnd) {
+            strs.push(decoder.decode(bytes.subarray(p + 3, p + 3 + len)));
+            p += 3 + len;
+            continue;
+          }
+        } else if (t === 0x71 && p + 5 <= recEnd) {
+          strs.push(strs[strs.length - 1] || "");
+          p += 5;
+          continue;
+        } else if (t === 0x70) {
+          strs.push("");
+          p += 1;
+          continue;
+        }
+        p++;
+      }
+      if (strs.length >= 9) {
+        const artist = (strs[0] || "Louvor").trim();
+        const lyrics = (strs[4] || "").trim();
+        const title = (strs[strs.length - 2] || "").trim();
+        if (title && lyrics) {
+          const s = this.parseLyricsToSong(title, artist, "C", lyrics);
+          songs.push(s);
+          this.saveCustomSong(s);
+        }
+      }
+    }
+    return songs;
+  }
+
+  // Universal File Importer (ProPresenter, OpenLP, Holyrics JSON/HLY, ChordPro, TXT)
   static importFile(fileName: string, content: string): Song {
     const lowerName = fileName.toLowerCase();
 
-    // 1. ProPresenter XML
-    if (content.includes("<RVPresentationDocument") || content.includes("<RVDisplaySlide") || lowerName.endsWith(".pro") || lowerName.endsWith(".pro6") || lowerName.endsWith(".pro5")) {
+    // 1. Holyrics JSON / .hly music export format
+    if (content.trim().startsWith("{") || lowerName.endsWith(".json")) {
+      try {
+        const obj = JSON.parse(content);
+        if (obj.title || obj.lyrics || obj.music) {
+          const m = obj.music || obj;
+          const t = m.title || m.name || fileName.replace(/\.[^/.]+$/, "");
+          const a = m.artist || m.author || "Louvor";
+          const k = m.key || m.tom || "C";
+          if (Array.isArray(m.paragraphs) || Array.isArray(m.slides)) {
+            const arr = m.paragraphs || m.slides;
+            const textBlocks = arr.map((p: any) => p.text || p.lyrics || String(p)).join("\n\n");
+            return this.parseLyricsToSong(t, a, k, textBlocks);
+          }
+          const rawLyrics = m.lyrics || m.text || "";
+          return this.parseLyricsToSong(t, a, k, rawLyrics);
+        }
+      } catch {
+        /* continue to other formats */
+      }
+    }
+
+    // 2. ProPresenter XML (.pro4, .pro5, .pro6)
+    if (content.includes("<RVPresentationDocument") || content.includes("<RVDisplaySlide") || lowerName.endsWith(".pro") || lowerName.endsWith(".pro6") || lowerName.endsWith(".pro5") || lowerName.endsWith(".pro4")) {
       return this.parseProPresenterXml(content, fileName);
     }
 
-    // 2. OpenLyrics XML / OpenLP XML
-    if (content.includes("<song xmlns=") || content.includes("<lyrics>") || lowerName.endsWith(".xml")) {
+    // 3. OpenLyrics XML / OpenLP XML / OpenSong XML
+    if (content.includes("<song") || content.includes("<lyrics>") || lowerName.endsWith(".xml")) {
       try {
         return this.parseOpenLyricsXml(content, fileName);
       } catch {
@@ -431,7 +807,7 @@ export class SongEngine {
       }
     }
 
-    // 3. ChordPro format
+    // 4. ChordPro / CCLI / Plain Text format
     let title = fileName.replace(/\.[^/.]+$/, "");
     let artist = "Importado";
     let key = "C";

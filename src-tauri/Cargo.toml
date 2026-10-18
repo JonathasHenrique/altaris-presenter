@@ -3,6 +3,7 @@ name = "open-presenter"
 version = "0.1.0"
 description = "A powerful, modern, open-source worship and projection software for Linux"
 authors = ["Jonathas"]
+license = "GPL-3.0-or-later"
 edition = "2021"
 
 [build-dependencies]

@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>OpenPresenter - OBS Lower-Third Stream Overlay</title>
+  <title>Altaris - OBS Lower-Third Stream Overlay</title>
   <style>
     /* 100% Transparent background for OBS Studio Browser Source */
     body, html {
@@ -11,10 +11,12 @@
     canvas {
       width: 100vw; height: 100vh; display: block;
     }
-  </style>
+  <style id="obs-custom-style"></style>
 </head>
 <body>
   <canvas id="stream-canvas" width="1920" height="1080"></canvas>
+  <div id="obs-custom-html-container" style="display: none; position: fixed; inset: 0; pointer-events: none; z-index: 10;"></div>
   <script type="module" src="/src/ts/stream.ts"></script>
 </body>
 </html>
+
