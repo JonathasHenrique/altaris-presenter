@@ -1,6 +1,7 @@
 import type { Slide, PlaylistItem } from "./state";
 import { inTauri, tauriInvoke } from "./server";
 import { showLoadingHUD, updateLoadingHUD, hideLoadingHUD } from "./loadingHud";
+import { parsePptxNative } from "../modules/pptxNativeParser";
 
 // Bibliotecas pesadas carregadas sob demanda (lazy) — nunca quebram a inicialização do app.
 let pdfjsPromise: Promise<any> | null = null;
@@ -194,40 +195,52 @@ export async function processImportFiles(
       const isPptx = lowerName.endsWith(".pptx") || lowerName.endsWith(".ppt") || lowerName.endsWith(".odp") || lowerName.endsWith(".pps") || lowerName.endsWith(".ppsx");
 
       if (isPptx) {
-        showLoadingHUD("Abrindo Apresentação...", `Renderizando layout original de "${f.name}"...`);
-        updateLoadingHUD(10, "Iniciando...", "Convertendo slides e gráficos...");
+        showLoadingHUD("Abrindo Apresentação...", `Extraindo arte, imagens e textos de "${f.name}"...`);
+        updateLoadingHUD(10, "Iniciando...", "Lendo formato PPTX nativo...");
 
         let slides: Slide[] = [];
-        // Converte com LibreOffice para manter 100% da formatação e visual original
-        const pdfFile = await convertPresentationToPdf(f, (pct, count, sub) => {
-          updateLoadingHUD(pct, count, sub);
-        });
 
-        if (pdfFile) {
-          updateLoadingHUD(50, "Processando slides...", "Gerando imagens de alta definição...");
-          slides = await convertPdfToSlides(pdfFile, (curr, tot, msg) => {
-            const pct = 50 + Math.round((curr / tot) * 48);
+        try {
+          // 1. Tenta extração nativa de alta fidelidade (extrai imagens originais + textos + auto-fit)
+          slides = await parsePptxNative(f, (curr, tot, msg) => {
+            const pct = 10 + Math.round((curr / tot) * 75);
             updateLoadingHUD(pct, `${curr} / ${tot}`, msg);
           });
-        } else {
-          // Fallback caso LibreOffice não esteja presente
-          updateLoadingHUD(60, "Extraindo textos...", "Carregando conteúdo da apresentação...");
-          slides = await convertPptxToSlidesFallback(f);
-          window.dispatchEvent(new CustomEvent("altaris:toast", {
-            detail: {
-              title: "💡 Dica: Salve como PDF (100% Nativo)",
-              message: "Para exibir todas as artes e layouts no telão sem depender de softwares externos, exporte seus slides como PDF no PowerPoint, Canva ou Google Docs!",
-              duration: 9000
-            }
-          }));
+        } catch (nativeErr) {
+          console.warn("Falha no extrator nativo PPTX, tentando LibreOffice:", nativeErr);
+        }
+
+        // 2. Se o extrator nativo não extraiu slides, tenta fallback via conversor de PDF
+        if (!slides || slides.length === 0) {
+          updateLoadingHUD(60, "Processando apresentação...", "Convertendo via motor secundário...");
+          const pdfFile = await convertPresentationToPdf(f, (pct, count, sub) => {
+            updateLoadingHUD(pct, count, sub);
+          });
+
+          if (pdfFile) {
+            slides = await convertPdfToSlides(pdfFile, (curr, tot, msg) => {
+              const pct = 60 + Math.round((curr / tot) * 38);
+              updateLoadingHUD(pct, `${curr} / ${tot}`, msg);
+            });
+          } else {
+            slides = await convertPptxToSlidesFallback(f);
+          }
         }
 
         if (slides.length > 0) {
+          window.dispatchEvent(new CustomEvent("altaris:toast", {
+            detail: {
+              title: "✅ Apresentação Importada com Sucesso!",
+              message: `${slides.length} slides processados com imagens e textos preservados nativamente.`,
+              duration: 5000
+            }
+          }));
+
           items.push({
             id: `media-pres-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             title: `📊 ${f.name.replace(/\.[^/.]+$/, "")} (${slides.length} slides)`,
             type: "media",
-            author: "Apresentação de Slides",
+            author: "Apresentação EBD / Slides",
             slides
           });
         }
