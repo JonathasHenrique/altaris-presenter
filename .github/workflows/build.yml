@@ -1,0 +1,39 @@
+name: Compilar Altaris Presenter (Windows & Linux)
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: # Permite disparar a compilação com 1 clique no GitHub
+
+jobs:
+  build-windows:
+    name: Compilar Executável (Windows x64)
+    runs-on: windows-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Instalar Rust estável
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Gerar Executáveis Windows (.exe / .msi)
+        run: npm run tauri build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Salvar Executável como Artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: Altaris-Windows-Installer
+          path: src-tauri/target/release/bundle/nsis/*.exe
