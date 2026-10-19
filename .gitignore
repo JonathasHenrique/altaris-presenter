@@ -22,3 +22,4 @@ public/data/bibles/biblia_a21.json
 # Local backups and user service archives
 *.altaris-backup.json
 *.opw.json
+dist-release/
