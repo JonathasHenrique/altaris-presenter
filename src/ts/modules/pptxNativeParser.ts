@@ -6,12 +6,6 @@ interface ExtractedMedia {
   [rId: string]: string; // Data URL (base64)
 }
 
-interface SlideShapeText {
-  isTitle: boolean;
-  paragraphs: string[];
-  fullText: string;
-}
-
 /**
  * Lê um arquivo .pptx e reconstrói apresentações nativas mantendo imagens de alta resolução,
  * títulos e formatações com Auto-Fit dinâmico do Altaris.
