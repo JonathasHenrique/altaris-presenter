@@ -148,6 +148,8 @@ fn open_browser_url(url: String) -> Result<(), String> {
 }
 
 fn main() {
+    // Corrige crash do WebKitWebProcess no Fedora / Wayland / Ubuntu recente com drivers Mesa/Intel/AMD
+    std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
     // Evita bug de tela preta em vídeos no WebKitGTK com VA-API DMA-BUF (Intel iHD),
     // forçando decodificação GStreamer compatível com Canvas 2D e DOM <video>.
     std::env::set_var("LIBVA_DRIVER_NAME", "none");
