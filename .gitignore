@@ -13,7 +13,7 @@ public/data/videos/*.webm
 *.mkv
 
 # User-downloaded copyrighted songs & external bibles (keep only open public domain)
-public/data/songs/holyrics_pack.json
+public/data/songs/coletanea_gospel.json
 public/data/bibles/biblia_nvi.json
 public/data/bibles/biblia_naa.json
 public/data/bibles/biblia_nbv.json
@@ -23,3 +23,4 @@ public/data/bibles/biblia_a21.json
 *.altaris-backup.json
 *.opw.json
 dist-release/
+dist-electron/

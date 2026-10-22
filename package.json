@@ -1,12 +1,17 @@
 {
   "name": "altaris",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/electron-main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "electron:dev": "npm run build:electron && electron .",
+    "electron:build": "npm run build:electron && electron-builder --linux appimage --publish never",
+    "electron:build:win": "npm run build:electron && electron-builder --win nsis --publish never",
+    "electron:build:all": "npm run build:electron && electron-builder --linux appimage --win nsis --publish never",
+    "build:electron": "npm run build && esbuild electron/main.js --bundle --platform=node --target=node20 --external:electron --outfile=dist/electron-main.js && esbuild electron/preload.js --bundle --platform=node --target=node20 --external:electron --outfile=dist/electron-preload.js"
   },
   "keywords": [],
   "author": "",
@@ -15,8 +20,13 @@
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.3",
     "@types/node": "^26.6.5",
+    "@types/ws": "^8.18.2",
+    "cross-env": "^10.1.0",
+    "electron": "^41.10.7",
+    "electron-builder": "^26.15.3",
     "typescript": "^7.0.2",
-    "vite": "^6.4.4"
+    "vite": "^6.4.4",
+    "ws": "^8.22.0"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.4",
@@ -24,6 +34,44 @@
     "@types/pdfjs-dist": "^2.10.377",
     "jszip": "^3.10.2",
     "lucide": "^1.58.0",
-    "pdfjs-dist": "^3.11.174"
+    "pdfjs-dist": "^3.11.174",
+    "qrcode": "^1.5.4"
+  },
+  "build": {
+    "appId": "org.altaris.presenter",
+    "productName": "Altaris",
+    "copyright": "Copyright \u00a9 2026 Altaris",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "public/**/*",
+      "!node_modules/**/*",
+      "!src-tauri/**/*",
+      "!flatpak/**/*"
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "public/icons/128x128.png",
+      "category": "AudioVideo",
+      "description": "Sistema profissional e livre de proje\u00e7\u00e3o e transmiss\u00e3o para igrejas"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "public/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Altaris",
+      "artifactName": "Altaris_Setup_${version}.${ext}"
+    }
   }
 }

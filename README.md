@@ -167,7 +167,7 @@ Inscreva-se também no nosso canal no YouTube:
 
 O **Altaris Presenter** é um software independente desenvolvido pela comunidade sob os termos da licença **GNU General Public License v3.0 (GPLv3)**.
 
-Todas as marcas registradas, nomes de produtos, logotipos e extensões de arquivo citados neste projeto (como *ProPresenter® / Renewed Vision*, *Holyrics®*, *OpenLP®*, *EasyWorship®*, *OBS Studio®*, etc.) são de propriedade exclusiva de seus respectivos proprietários. A menção a estes nomes destina-se unicamente à documentação de **interoperabilidade e compatibilidade de formatos de arquivo**, de acordo com a legislação de propriedade intelectual e direito de interoperabilidade.
+O Altaris Presenter é um projeto livre e independente, desenvolvido para fornecer uma solução autônoma, moderna e profissional de projeção para igrejas.
 
 ---
 

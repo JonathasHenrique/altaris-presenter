@@ -54,7 +54,7 @@
           <input type="file" id="input-full-backup-file" accept=".json,.altaris-backup.json" style="display: none;">
           <hr class="menu-divider">
           <button class="menu-item" id="mi-import-media"><span class="item-icon">📽️</span> Importar apresentação / mídia...</button>
-          <button class="menu-item" id="mi-import-file"><span class="item-icon">📂</span> Importar Arquivo (ProPresenter, Holyrics, OpenLP)... <span class="shortcut">⌘O</span></button>
+          <button class="menu-item" id="mi-import-file"><span class="item-icon">📂</span> Importar Arquivo de Louvores / Slides... <span class="shortcut">⌘O</span></button>
         </div>
       </div>
 
@@ -258,7 +258,7 @@
             <button id="pill-quick-library" class="quick-pill" style="border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7;" title="Abrir Biblioteca de Itens Baixados e Importados (100% Offline)"><span class="pill-icon">📚</span> Salvos</button>
             <button id="pill-quick-harpa" class="quick-pill" title="Harpa Cristã (640 Hinos)"><span class="pill-icon">🎵</span> Harpa</button>
             <button id="pill-quick-new" class="quick-pill" title="Criar Nova Letra"><span class="pill-icon">✍️</span> Letra</button>
-            <button id="pill-quick-media" class="quick-pill" title="Adicionar Imagens, Vídeos, PDFs ou Slides PowerPoint/ODP (requer LibreOffice)"><span class="pill-icon">🖼️</span> Mídia</button>
+            <button id="pill-quick-media" class="quick-pill" title="Adicionar Imagens, Vídeos, PDFs ou Apresentações PPTX/ODP"><span class="pill-icon">🖼️</span> Mídia</button>
           </div>
           <input type="file" id="input-quick-media-files" accept="image/*,video/*,application/pdf,.pdf,.pptx,.ppt,.pptm,.odp,.fodp,.pps,.ppsx,.ppsm,.pot,.potx,.potm,.key,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint" multiple style="display: none;">
 
@@ -278,7 +278,7 @@
         </div>
       </section>
 
-      <!-- Coluna 2: Grade de Slides (ProPresenter Style) -->
+      <!-- Coluna 2: Grade de Slides -->
       <section class="column glass-panel">
         <div class="panel-header" style="min-height: 44px;">
           <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; min-width: 0; flex: 1;">
@@ -751,7 +751,7 @@
             <div class="macos-form-label">Apresentações &amp; PDFs:</div>
             <div class="macos-form-control">
               <label for="input-media-pdf" class="btn btn-primary" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                <span>📄 Importar Slides (PDF / PowerPoint / Imagens)...</span>
+                <span>📄 Importar Slides (PPTX / PDF / Imagens)...</span>
               </label>
               <input type="file" id="input-media-pdf" accept=".pdf,application/pdf,.pptx,.ppt,.pptm,.odp,.fodp,.pps,.ppsx,.ppsm,.pot,.potx,.potm,.key,image/*,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint" multiple style="display: none;">
               <div class="macos-form-hint">Cada página do PDF ou slide da apresentação é convertida em telas de projeção de altíssima definição (1080p/4K).</div>
@@ -766,7 +766,7 @@
                   • <b>PDF (Recomendado / 100% Nativo):</b> Exporte sua apresentação como <b>PDF</b> antes do culto. Abre instantaneamente, com máxima nitidez e sem depender de software externo.
                 </div>
                 <div>
-                  • <b>PowerPoint / ODP (.pptx, .ppt, .odp):</b> O Altaris converte cada página em lâminas de altíssima definição (1080p/4K) para preview e projeção direta no telão. Preserva layout, artes e imagens originais (modo estático, sem animações).
+                  • <b>Apresentações de Slides (.pptx, .odp, .pdf):</b> O Altaris converte cada página em lâminas de altíssima definição (1080p/4K) para preview e projeção direta no telão. Preserva layout, artes e imagens originais (modo estático, sem animações).
                 </div>
               </div>
             </div>
@@ -1231,7 +1231,7 @@
 
           <div style="text-align: center; padding: 16px 0 4px;">
             <div style="font-size: 1.25rem; font-weight: 800; color: #fff;">Altaris</div>
-            <div style="font-size: 0.75rem; color: #64748b;">Compatibilidade de importação com arquivos ProPresenter®, Holyrics®, OpenLP e OBS Studio.</div>
+            <div style="font-size: 0.75rem; color: #64748b;">Compatibilidade ampla com formatos de slides, cancioneiros e OBS Studio.</div>
           </div>
         </div>
       </div>

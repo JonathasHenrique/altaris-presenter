@@ -1614,7 +1614,7 @@ btnSaveCustomSong?.addEventListener("click", () => {
   showOfflineToast("Letra Salva 100% Offline", `"${song.title}" gravada na sua Biblioteca local.`);
 });
 
-// Tab 4: Universal File Import Logic (ProPresenter, OpenLP, Holyrics .mufl/.hly, ChordPro, XML Bibles)
+// Tab 4: Universal File Import Logic (Formatos de Slides, Acervos de Músicas, ChordPro, Bíblias XML)
 inputFileImport?.addEventListener("change", async () => {
   if (!inputFileImport.files || inputFileImport.files.length === 0) return;
   const file = inputFileImport.files[0];
@@ -1623,10 +1623,10 @@ inputFileImport?.addEventListener("change", async () => {
   importStatusBox.innerHTML = `Analisando e importando: <b>${name}</b>...`;
 
   try {
-    // Check if it is a Holyrics binary pack (.mufl)
+    // Check if it is a binary song collection pack (.mufl)
     if (name.toLowerCase().endsWith(".mufl")) {
       const buf = await file.arrayBuffer();
-      const songs = SongEngine.parseHolyricsMuflBuffer(buf);
+      const songs = SongEngine.parseMuflBinaryBuffer(buf);
       if (songs.length === 0) {
         throw new Error("Nenhuma música encontrada no pacote .mufl.");
       }
@@ -1677,7 +1677,7 @@ inputFileImport?.addEventListener("change", async () => {
       return;
     }
 
-    // Otherwise, parse as Song / Presentation (ProPresenter, OpenLP, ChordPro, TXT)
+    // Otherwise, parse as Song / Presentation (XML, JSON, ChordPro, TXT)
     const song = SongEngine.importFile(name, text);
     SongEngine.saveCustomSong(song);
 
@@ -4094,7 +4094,7 @@ function openLayoutAuditModal(item: PlaylistItem) {
         <span style="font-size: 1.4rem;">⚠️</span>
         <div>
           <div style="font-weight: 700; color: #fbbf24; font-size: 0.88rem; margin-bottom: 2px;">${rep.overflowSlides} Slide(s) com Risco de Transbordo</div>
-          <div style="font-size: 0.78rem; color: #94a3b8; line-height: 1.4;">Caixas de texto foram criadas muito rentes à borda no PowerPoint. Clique em <strong>Auto-Ajustar</strong> para que o Altaris recalcule os limites garantindo que o texto nunca ultrapasse as formas.</div>
+          <div style="font-size: 0.78rem; color: #94a3b8; line-height: 1.4;">Caixas de texto foram criadas muito rentes à borda no arquivo de apresentação. Clique em <strong>Auto-Ajustar</strong> para que o Altaris recalcule os limites garantindo que o texto nunca ultrapasse as formas.</div>
         </div>
       `;
     }

@@ -1,10 +1,7 @@
-name: Compilar Altaris Presenter (Multiplataforma)
+name: Compilar Altaris Presenter (Electron Multiplataforma)
 
 on:
   push:
-    branches: [ "main" ]
-    tags: [ "v*" ]
-  pull_request:
     branches: [ "main" ]
   workflow_dispatch:
 
@@ -19,31 +16,25 @@ jobs:
       - name: Baixar código
         uses: actions/checkout@v4
 
-      - name: Instalar dependências do sistema Linux e Flatpak
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libasound2-dev libssl-dev flatpak flatpak-builder elfutils
-
-      - name: Configurar ambiente Flatpak
-        run: |
-          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user -y flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08
-
-      - name: Instalar Rust estável
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Instalar dependências
+      - name: Instalar dependências Node
         run: npm install
 
-      - name: Gerar Pacote Linux (.AppImage)
-        run: npm run tauri build
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compilar AppImage (Electron)
+        run: |
+          npm run build:electron
+          npx electron-builder --linux appimage --dir --publish never
+
+      - name: Instalar dependências Flatpak
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder elfutils
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08
 
       - name: Gerar Pacote Linux (.flatpak)
         run: |
@@ -57,29 +48,27 @@ jobs:
         with:
           name: Altaris-Linux-Packages
           path: |
-            src-tauri/target/release/bundle/appimage/*.AppImage
+            dist-electron/*.AppImage
             Altaris-1.0.0.flatpak
 
       - name: Limpar Pacotes Obsoletos da Release
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         run: |
-          gh release view v1.0.0 --json assets -q '.assets[] | select(.name | test("\\.deb$|\\.msi$|x86_64\\.AppImage$")) | .name' 2>/dev/null | while read -r asset; do
+          gh release view v1.0.0 --json assets -q ".assets[] | select(.name | test("\\.deb$|\\.msi$|x86_64\\.AppImage$|Altaris_1.0.0_amd64.AppImage$")) | .name" 2>/dev/null | while read -r asset; do
             if [ -n "$asset" ]; then
-              echo "Removendo pacote obsoleto: $asset"
+              echo "Removendo pacote antigo/obsoleto: $asset"
               gh release delete-asset v1.0.0 "$asset" -y || true
             fi
           done || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publicar Binários Linux na Release
+      - name: Publicar Binários Linux na Release v1.0.0
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         with:
           tag_name: v1.0.0
           name: "Altaris Presenter v1.0.0"
           files: |
-            src-tauri/target/release/bundle/appimage/*.AppImage
+            dist-electron/*.AppImage
             Altaris-1.0.0.flatpak
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -91,9 +80,6 @@ jobs:
       - name: Baixar código
         uses: actions/checkout@v4
 
-      - name: Instalar Rust estável
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
@@ -103,24 +89,33 @@ jobs:
         run: npm install
 
       - name: Gerar Instalador Windows (.exe)
-        run: npm run tauri build
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run electron:build:win
 
       - name: Salvar Executável como Artefato
         uses: actions/upload-artifact@v4
         with:
           name: Altaris-Windows-Installer
           path: |
-            src-tauri/target/release/bundle/nsis/*.exe
+            dist-electron/*.exe
 
-      - name: Publicar Executável na Release
+      - name: Limpar Instalador Windows Antigo da Release
+        shell: bash
+        run: |
+          gh release view v1.0.0 --json assets -q ".assets[] | select(.name | test("x64-setup.exe$")) | .name" 2>/dev/null | while read -r asset; do
+            if [ -n "$asset" ]; then
+              echo "Removendo instalador antigo: $asset"
+              gh release delete-asset v1.0.0 "$asset" -y || true
+            fi
+          done || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publicar Executável na Release v1.0.0
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         with:
           tag_name: v1.0.0
           name: "Altaris Presenter v1.0.0"
           files: |
-            src-tauri/target/release/bundle/nsis/*.exe
+            dist-electron/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

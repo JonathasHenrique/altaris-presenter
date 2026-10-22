@@ -274,7 +274,7 @@ export class SongEngine {
     }
 
     try {
-      const packRes = await fetch("/data/songs/holyrics_pack.json");
+      const packRes = await fetch("/data/songs/coletanea_gospel.json");
       if (packRes.ok) {
         const rawPack: { title: string; artist: string; lyrics: string }[] = await packRes.json();
         this.packSongs = rawPack.map((p, idx) => {
@@ -285,7 +285,7 @@ export class SongEngine {
         console.log(`[SongEngine] ${this.packSongs.length} Louvores do Pacote Offline carregados`);
       }
     } catch (e) {
-      console.warn("[SongEngine] Erro ao carregar holyrics_pack.json:", e);
+      console.warn("[SongEngine] Erro ao carregar coletanea_gospel.json:", e);
     }
   }
 
@@ -465,8 +465,8 @@ export class SongEngine {
     return combined;
   }
 
-  // ProPresenter 4 / 5 / 6 XML Parser (REA OpenLP + ProPresenter parity)
-  static parseProPresenterXml(xmlText: string, fallbackTitle: string): Song {
+  // XML Slide Presentation Parser
+  static parseXmlSlidePresentation(xmlText: string, fallbackTitle: string): Song {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlText, "text/xml");
     const root = doc.documentElement;
@@ -480,7 +480,7 @@ export class SongEngine {
       root.getAttribute("CCLIAuthor") ||
       root.getAttribute("artist") ||
       root.getAttribute("CCLIArtistCredits") ||
-      "ProPresenter";
+      "Ministério de Louvor";
 
     const slides: SongSlide[] = [];
     const displaySlides = doc.querySelectorAll("RVDisplaySlide");
@@ -503,7 +503,7 @@ export class SongEngine {
             lyrics = textEl.textContent || "";
           }
         } else {
-          // ProPresenter 6 NSString ivar check
+          // XML string property check
           const nsStrings = textEl.querySelectorAll("NSString");
           nsStrings.forEach((ns) => {
             const ivar = ns.getAttribute("rvXMLIvarName");
@@ -543,7 +543,7 @@ export class SongEngine {
     });
 
     if (slides.length === 0) {
-      throw new Error("Nenhum slide de texto encontrado no arquivo ProPresenter.");
+      throw new Error("Nenhum slide de texto encontrado no arquivo importado.");
     }
 
     return {
@@ -555,7 +555,7 @@ export class SongEngine {
     };
   }
 
-  // OpenLyrics / OpenLP / OpenSong XML Parser
+  // OpenLyrics & OpenSong XML Parser
   static parseOpenLyricsXml(xmlText: string, fallbackTitle: string): Song {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlText, "text/xml");
@@ -563,7 +563,7 @@ export class SongEngine {
     const titleEl = doc.querySelector("title");
     const title = titleEl?.textContent || fallbackTitle.replace(/\.[^/.]+$/, "");
     const authorEl = doc.querySelector("author");
-    const artist = authorEl?.textContent || "OpenLP";
+    const artist = authorEl?.textContent || "Ministério de Louvor";
 
     const slides: SongSlide[] = [];
     const verses = doc.querySelectorAll("verse");
@@ -607,7 +607,7 @@ export class SongEngine {
     }
 
     return {
-      id: `openlp-${Date.now()}`,
+      id: `xml-song-${Date.now()}`,
       title: title.trim(),
       artist: artist.trim(),
       key: "C",
@@ -628,7 +628,7 @@ export class SongEngine {
       let label = `Verso ${slides.length + 1}`;
       let category: SongSlide["category"] = "verse";
 
-      // Holyrics comment line support: lines starting with // are stage/operator notes or section labels
+      // Comment line support: lines starting with // are stage/operator notes or section labels
       const rawLines = block.split("\n");
       const cleanLines: string[] = [];
       let commentNote = "";
@@ -697,7 +697,7 @@ export class SongEngine {
     return { id, title: title.trim() || "Sem Título", artist: artist.trim() || "Igreja", key: key || "C", slides };
   }
 
-  static parseHolyricsMuflBuffer(buf: ArrayBuffer): Song[] {
+  static parseMuflBinaryBuffer(buf: ArrayBuffer): Song[] {
     const bytes = new Uint8Array(buf);
     const decoder = new TextDecoder("utf-8");
     // Locate first "titleToSearch" followed by "xp"
@@ -767,11 +767,11 @@ export class SongEngine {
     return songs;
   }
 
-  // Universal File Importer (ProPresenter, OpenLP, Holyrics JSON/HLY, ChordPro, TXT)
+  // Universal File Importer (JSON, XML, ChordPro, TXT, Slides)
   static importFile(fileName: string, content: string): Song {
     const lowerName = fileName.toLowerCase();
 
-    // 1. Holyrics JSON / .hly music export format
+    // 1. JSON music export format (.json / .hly)
     if (content.trim().startsWith("{") || lowerName.endsWith(".json")) {
       try {
         const obj = JSON.parse(content);
@@ -793,12 +793,12 @@ export class SongEngine {
       }
     }
 
-    // 2. ProPresenter XML (.pro4, .pro5, .pro6)
+    // 2. XML slide presentation format (.pro, .xml)
     if (content.includes("<RVPresentationDocument") || content.includes("<RVDisplaySlide") || lowerName.endsWith(".pro") || lowerName.endsWith(".pro6") || lowerName.endsWith(".pro5") || lowerName.endsWith(".pro4")) {
-      return this.parseProPresenterXml(content, fileName);
+      return this.parseXmlSlidePresentation(content, fileName);
     }
 
-    // 3. OpenLyrics XML / OpenLP XML / OpenSong XML
+    // 3. OpenLyrics XML / OpenSong XML
     if (content.includes("<song") || content.includes("<lyrics>") || lowerName.endsWith(".xml")) {
       try {
         return this.parseOpenLyricsXml(content, fileName);
