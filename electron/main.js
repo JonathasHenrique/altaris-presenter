@@ -5,6 +5,14 @@ const os = require('os');
 const { spawn } = require('child_process');
 const { startServer } = require('./server');
 
+// Flatpak and container sandbox compatibility
+if (process.env.FLATPAK_ID || process.env.container === "flatpak" || fs.existsSync("/.flatpak-info")) {
+  app.commandLine.appendSwitch("no-sandbox");
+  app.commandLine.appendSwitch("disable-gpu-sandbox");
+  app.commandLine.appendSwitch("disable-setuid-sandbox");
+}
+
+
 // Autoplay 100% automático no Chromium sem restrição de gesto
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 app.commandLine.appendSwitch('disable-features', 'PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies');
@@ -15,17 +23,20 @@ let stageWindow = null;
 let serverInstance = null;
 const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
 
-function resolveHtmlPath(file) {
+function loadWindowPage(win, file) {
   if (isDev) {
-    return file === 'index.html' ? 'http://localhost:5173' : `http://localhost:5173/${file}`;
+    win.loadURL(file === "index.html" ? "http://localhost:5173" : `http://localhost:5173/${file}`);
+  } else {
+    const candidate1 = path.join(__dirname, file);
+    if (fs.existsSync(candidate1)) return win.loadFile(candidate1);
+    const candidate2 = path.join(__dirname, "dist", file);
+    if (fs.existsSync(candidate2)) return win.loadFile(candidate2);
+    const candidate3 = path.join(__dirname, "..", "dist", file);
+    if (fs.existsSync(candidate3)) return win.loadFile(candidate3);
+    return win.loadFile(candidate1);
   }
-  // No build de produção, os arquivos HTML estão no mesmo diretório de electron-main.js (dist/)
-  const candidate1 = path.join(__dirname, file);
-  if (fs.existsSync(candidate1)) return `file://${candidate1}`;
-  const candidate2 = path.join(__dirname, 'dist', file);
-  if (fs.existsSync(candidate2)) return `file://${candidate2}`;
-  return `file://${candidate1}`;
 }
+
 
 function resolvePreloadPath() {
   const candidate1 = path.join(__dirname, 'electron-preload.js');
@@ -80,7 +91,7 @@ function toggleAudienceWindow(monitorIndex) {
     }
   });
 
-  audienceWindow.loadURL(resolveHtmlPath('audience.html'));
+  loadWindowPage(audienceWindow, 'audience.html');
   audienceWindow.on('closed', () => { audienceWindow = null; });
   return true;
 }
@@ -114,7 +125,7 @@ function toggleStageWindow(monitorIndex) {
     }
   });
 
-  stageWindow.loadURL(resolveHtmlPath('stage.html'));
+  loadWindowPage(stageWindow, 'stage.html');
   stageWindow.on('closed', () => { stageWindow = null; });
   return true;
 }
@@ -224,7 +235,7 @@ function createMainWindow() {
 
   Menu.setApplicationMenu(null);
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  loadWindowPage(mainWindow, 'index.html');
 
   mainWindow.on('closed', () => {
     mainWindow = null;

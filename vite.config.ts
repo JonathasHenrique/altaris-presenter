@@ -12,6 +12,7 @@ let pendingTestCommand: string | null = null;
 let lastTestResult: any = null;
 
 export default defineConfig({
+  base: "./",
   clearScreen: false,
   plugins: [
     {
