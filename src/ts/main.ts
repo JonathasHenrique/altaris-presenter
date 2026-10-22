@@ -458,16 +458,13 @@ function selectPlaylistItem(index: number, fireImmediately: boolean = false, sta
   if (btnAudit && btnAuditText) {
     if (item.auditReport) {
       btnAudit.style.display = "inline-flex";
+      btnAudit.classList.remove("audit-ok", "audit-warn");
       if (item.auditReport.overflowSlides === 0) {
-        btnAudit.style.background = "rgba(16, 185, 129, 0.15)";
-        btnAudit.style.borderColor = "rgba(16, 185, 129, 0.35)";
-        btnAudit.style.color = "#34d399";
-        btnAuditText.textContent = "🛡️ Layout 100% OK";
+        btnAudit.classList.add("audit-ok");
+        btnAuditText.textContent = "🛡️ Layout OK";
       } else {
-        btnAudit.style.background = "rgba(245, 158, 11, 0.18)";
-        btnAudit.style.borderColor = "rgba(245, 158, 11, 0.45)";
-        btnAudit.style.color = "#fbbf24";
-        btnAuditText.textContent = `⚠️ ${item.auditReport.overflowSlides} Ajustes de Layout`;
+        btnAudit.classList.add("audit-warn");
+        btnAuditText.textContent = `⚠️ Layout (${item.auditReport.overflowSlides})`;
       }
     } else {
       btnAudit.style.display = "none";
@@ -4050,16 +4047,13 @@ async function runAutoFitOnItem(item: PlaylistItem, targetSlideNum?: number) {
     const btnAudit = document.getElementById("btn-audit-report");
     const btnAuditText = document.getElementById("btn-audit-report-text");
     if (btnAudit && btnAuditText) {
+      btnAudit.classList.remove("audit-ok", "audit-warn");
       if (newAudit.overflowSlides === 0) {
-        btnAudit.style.background = "rgba(16, 185, 129, 0.15)";
-        btnAudit.style.borderColor = "rgba(16, 185, 129, 0.35)";
-        btnAudit.style.color = "#34d399";
-        btnAuditText.textContent = "🛡️ Layout 100% OK";
+        btnAudit.classList.add("audit-ok");
+        btnAuditText.textContent = "🛡️ Layout OK";
       } else {
-        btnAudit.style.background = "rgba(245, 158, 11, 0.18)";
-        btnAudit.style.borderColor = "rgba(245, 158, 11, 0.45)";
-        btnAudit.style.color = "#fbbf24";
-        btnAuditText.textContent = `⚠️ ${newAudit.overflowSlides} Ajustes de Layout`;
+        btnAudit.classList.add("audit-warn");
+        btnAuditText.textContent = `⚠️ Layout (${newAudit.overflowSlides})`;
       }
     }
 

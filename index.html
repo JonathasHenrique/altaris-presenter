@@ -280,21 +280,21 @@
 
       <!-- Coluna 2: Grade de Slides (ProPresenter Style) -->
       <section class="column glass-panel">
-        <div class="panel-header">
-          <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
-            <span id="active-item-title" style="font-size: 1.05rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Selecione um hino ou passagem bíblica</span>
-            <span id="active-item-badge" class="slide-badge-pill slide-badge-verse" style="display: none;">MÚSICA</span>
+        <div class="panel-header" style="min-height: 44px;">
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; min-width: 0; flex: 1;">
+            <span id="active-item-title" style="font-size: 0.95rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Selecione um hino ou passagem bíblica</span>
+            <span id="active-item-badge" class="slide-badge-pill slide-badge-verse" style="display: none; flex-shrink: 0;">MÚSICA</span>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <button id="btn-audit-report" class="btn" style="display: none; padding: 4px 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; font-size: 0.76rem; font-weight: 600; border-radius: 6px; cursor: pointer;" title="Auditoria Inteligente de Layout e Transbordo de Fontes">
+          <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            <button id="btn-audit-report" class="btn btn-header-action btn-header-audit" style="display: none;" title="Auditoria Inteligente de Layout e Transbordo de Fontes">
               <span id="btn-audit-report-text">🛡️ Layout OK</span>
             </button>
-            <button id="btn-launch-impress" class="btn" style="display: none; padding: 4px 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-size: 0.76rem; font-weight: 600; border-radius: 6px; cursor: pointer;" title="Apresentar via LibreOffice Impress com animações e transições originais">
-              <span>▶ Animações (LibreOffice)</span>
+            <button id="btn-launch-impress" class="btn btn-header-action btn-header-impress" style="display: none;" title="Apresentar via LibreOffice Impress com animações e transições originais">
+              <span>▶ Animações</span>
             </button>
-            <button id="btn-prev-slide" class="btn" style="padding: 4px 10px;" title="Slide Anterior (Seta Esquerda)">◀</button>
-            <button id="btn-next-slide" class="btn" style="padding: 4px 10px;" title="Próximo Slide (Espaço / Seta Direita)">▶</button>
+            <button id="btn-prev-slide" class="btn btn-header-nav" title="Slide Anterior (Seta Esquerda)">◀</button>
+            <button id="btn-next-slide" class="btn btn-header-nav" title="Próximo Slide (Espaço / Seta Direita)">▶</button>
           </div>
         </div>
 

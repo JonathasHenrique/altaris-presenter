@@ -60,6 +60,18 @@ jobs:
             src-tauri/target/release/bundle/appimage/*.AppImage
             Altaris-1.0.0.flatpak
 
+      - name: Limpar Pacotes Obsoletos da Release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        run: |
+          gh release view v1.0.0 --json assets -q '.assets[] | select(.name | test("\\.deb$|\\.msi$|x86_64\\.AppImage$")) | .name' 2>/dev/null | while read -r asset; do
+            if [ -n "$asset" ]; then
+              echo "Removendo pacote obsoleto: $asset"
+              gh release delete-asset v1.0.0 "$asset" -y || true
+            fi
+          done || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publicar Binários Linux na Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
