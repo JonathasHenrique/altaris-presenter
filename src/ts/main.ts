@@ -30,6 +30,7 @@ import { BibleEngine, BibleVerse, BibleVersionInfo, PUBLIC_DOMAIN_CATALOG, COMMU
 import { getServerInfo, inTauri, tauriInvoke } from "./engine/server";
 import { processImportFiles, convertPresentationToPdf, convertPdfToSlides } from "./engine/mediaImporter";
 import { sanitizePptxWithAutoFit, auditPptxPresentation } from "./modules/slideAuditor";
+import { checkOllamaStatus, optimizeSlideWithLocalAI } from "./modules/pptxNativeParser";
 import { showLoadingHUD, updateLoadingHUD, hideLoadingHUD } from "./engine/loadingHud";
 
 
@@ -455,6 +456,10 @@ function selectPlaylistItem(index: number, fireImmediately: boolean = false, sta
   const btnImpress = document.getElementById("btn-launch-impress");
   if (btnImpress) {
     btnImpress.style.display = item.presentationPath ? "inline-flex" : "none";
+  }
+  const btnAi = document.getElementById("btn-ai-optimize");
+  if (btnAi) {
+    btnAi.style.display = (item.type === "media" && item.slides.length > 0) ? "inline-flex" : "none";
   }
 
   const btnAudit = document.getElementById("btn-audit-report");
@@ -3861,6 +3866,54 @@ bootstrap();
 
 
 
+
+async function handleLocalAiOptimization() {
+  const item = playlist[activeItemIndex];
+  if (!item || item.slides.length === 0) return;
+
+  const targetIdx = stagedSlideIndex >= 0 ? stagedSlideIndex : (liveSlideIndex >= 0 ? liveSlideIndex : 0);
+  const slide = item.slides[targetIdx];
+  if (!slide || !slide.text?.trim()) {
+    showOfflineToast("✨ IA Local", "Selecione um slide com texto para otimizar.");
+    return;
+  }
+
+  showLoadingHUD("Verificando IA Local...", "Conectando ao Ollama (localhost:11434)...");
+  const status = await checkOllamaStatus();
+  hideLoadingHUD();
+
+  if (!status.available) {
+    showOfflineToast(
+      "✨ IA Local (Ollama)",
+      "Ollama não foi detectado em execução no seu computador. Para usar IA local gratuita: 1) Instale de ollama.com  2) Execute 'ollama run llama3.2'. O Altaris usará o Auto-Fit matemático inteligente!",
+      7000
+    );
+    return;
+  }
+
+  const model = status.recommendedModel || "llama3.2";
+  showLoadingHUD("✨ Otimizando Slide com IA Local...", `Processando texto com ${model} (100% offline)...`);
+
+  try {
+    const res = await optimizeSlideWithLocalAI(slide.title, slide.text, model);
+    hideLoadingHUD();
+    if (res && res.text) {
+      slide.text = res.text;
+      renderSlideMatrix(item);
+      stageSlide(targetIdx);
+      showOfflineToast("✨ Slide Otimizado!", `Texto diagramado e resumido com sucesso via ${model}.`);
+    } else {
+      showOfflineToast("Aviso IA Local", "O modelo não retornou novo texto para este slide.");
+    }
+  } catch (err: any) {
+    hideLoadingHUD();
+    showOfflineToast("Erro na IA Local", err.message || String(err));
+  }
+}
+
+document.getElementById("btn-ai-optimize")?.addEventListener("click", () => {
+  handleLocalAiOptimization();
+});
 
 document.getElementById("btn-launch-impress")?.addEventListener("click", () => {
   launchActivePresentationInLibreOffice();

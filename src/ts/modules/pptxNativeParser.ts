@@ -1,14 +1,30 @@
 // Altaris PPTX Native Presentation Extractor & Slide Rebuilder
-// Extrai imagens originais (ppt/media/), textos estruturados e formas sem depender de LibreOffice.
+// Extrai apresentações instantaneamente (< 1s), mantendo textos dinâmicos e editáveis,
+// com suporte a Auto-Fit do Altaris e Otimização opcional via IA Local (Ollama).
 import type { Slide } from "../engine/state";
 
 interface ExtractedMedia {
   [rId: string]: string; // Data URL (base64)
 }
 
+function isFooterNoise(t: string): boolean {
+  const low = t.toLowerCase().trim();
+  return (
+    low.includes("www.") ||
+    low.includes(".com") ||
+    low.includes("nome do professor") ||
+    low.includes("clique para adicionar") ||
+    low.includes("todos os direitos reservados")
+  );
+}
+
+function cleanText(t: string): string {
+  return t.replace(/[\t\r]+/g, " ").replace(/ +/g, " ").trim();
+}
+
 /**
- * Lê um arquivo .pptx e reconstrói apresentações nativas mantendo imagens de alta resolução,
- * títulos e formatações com Auto-Fit dinâmico do Altaris.
+ * Lê um arquivo .pptx e reconstrói apresentações nativas como slides editáveis do Altaris
+ * em menos de 1 segundo, sem depender de conversões pesadas do LibreOffice.
  */
 export async function parsePptxNative(
   file: File,
@@ -22,7 +38,7 @@ export async function parsePptxNative(
   const baseTitle = file.name.replace(/\.[^/.]+$/, "");
   const slides: Slide[] = [];
 
-  // 1. Encontra todos os slides ordenados
+  // 1. Encontra todos os slides ordenados numericamente
   const slideEntries: { index: number; path: string; relsPath: string }[] = [];
   zip.forEach((relPath: string) => {
     const match = relPath.match(/^ppt\/slides\/slide(\d+)\.xml$/i);
@@ -45,7 +61,7 @@ export async function parsePptxNative(
   // 2. Processa cada slide individualmente
   for (let i = 0; i < total; i++) {
     const entry = slideEntries[i];
-    onProgress?.(i + 1, total, `Extraindo slide ${i + 1} de ${total} (imagens e textos)...`);
+    onProgress?.(i + 1, total, `Carregando slide ${i + 1} de ${total}...`);
 
     // A. Mapeia imagens do slide a partir do arquivo .rels
     const mediaMap: ExtractedMedia = {};
@@ -60,9 +76,7 @@ export async function parsePptxNative(
           const target = rNode.getAttribute("Target") || "";
           const type = rNode.getAttribute("Type") || "";
 
-          // Relacionamento com mídia/imagem
           if (type.includes("image") || /\.(png|jpe?g|webp|gif|svg)$/i.test(target)) {
-            // Normaliza caminho relativo (ex: "../media/image1.png" -> "ppt/media/image1.png")
             const normalized = target.startsWith("../")
               ? `ppt/${target.substring(3)}`
               : target.startsWith("ppt/")
@@ -89,28 +103,26 @@ export async function parsePptxNative(
 
     const doc = parser.parseFromString(slideXml, "application/xml");
 
-    // Identifica imagem principal do slide (fundo ou ilustração central)
+    // Identifica imagem principal do slide (fundo ou ilustração)
     let primaryImageUrl: string | undefined = undefined;
     const blipNodes = doc.getElementsByTagName("a:blip");
     for (let b = 0; b < blipNodes.length; b++) {
       const embedId = blipNodes[b].getAttribute("r:embed") || blipNodes[b].getAttribute("r:link");
       if (embedId && mediaMap[embedId]) {
         primaryImageUrl = mediaMap[embedId];
-        break; // Primeira imagem como destaque/fundo
+        break;
       }
     }
 
-    // Identifica formas de texto (<p:sp>)
+    // C. Extrai formas de texto (<p:sp>)
     const shapes = doc.getElementsByTagName("p:sp");
-    let slideTitle = "";
-    const contentBlocks: string[] = [];
+    const extractedShapes: { isTitlePlaceholder: boolean; text: string }[] = [];
 
     for (let s = 0; s < shapes.length; s++) {
       const sp = shapes[s];
-      // Verifica se é placeholder de título
       const ph = sp.getElementsByTagName("p:ph")[0];
       const phType = ph ? ph.getAttribute("type") : null;
-      const isTitleShape = phType === "title" || phType === "ctrTitle";
+      const isTitlePlaceholder = phType === "title" || phType === "ctrTitle";
 
       const txBody = sp.getElementsByTagName("p:txBody")[0];
       if (!txBody) continue;
@@ -125,69 +137,149 @@ export async function parsePptxNative(
         for (let t = 0; t < textNodes.length; t++) {
           line += textNodes[t].textContent || "";
         }
-        line = line.trim();
-        if (line) shapeLines.push(line);
+        line = cleanText(line);
+        if (line && !isFooterNoise(line)) {
+          shapeLines.push(line);
+        }
       }
 
-      const shapeText = shapeLines.join("\n").trim();
-      if (!shapeText) continue;
-
-      if (isTitleShape && !slideTitle) {
-        slideTitle = shapeText;
-      } else if (!slideTitle && shapeLines.length === 1 && shapeText.length < 50) {
-        // Primeiro texto curto se comporta como título
-        slideTitle = shapeText;
-      } else {
-        contentBlocks.push(shapeText);
+      const fullShapeText = shapeLines.join("\n").trim();
+      if (fullShapeText) {
+        extractedShapes.push({ isTitlePlaceholder, text: fullShapeText });
       }
     }
 
-    // Concatena blocos de texto respeitando parágrafos
-    const fullBodyText = contentBlocks.join("\n\n").trim();
+    // D. Inteligência de Título e Conteúdo
+    let slideTitle = "";
+    const bodyParagraphs: string[] = [];
 
-    // Detecção bíblica simples (ex: Jr 2.13, Sl 78.37, João 3:16)
-    const isBibleRef = /\b([1-3]?\s?[A-Za-zçãéíóú]{2,12})\s+\d+[:.]\d+/i.test(fullBodyText) ||
-                       /\b(Jr|Sl|Mt|Mc|Lc|Jo|Rm|Ef|Fp|Cl|Hb|Ap)\s+\d+/i.test(fullBodyText);
+    // 1. Títulos canônicos conhecidos de EBD
+    const canonicalPattern = /^(TEXTO\s+ÁUREO|VERDADE\s+PRÁTICA|OBJETIVOS(\s+DA\s+LIÇÃO)?|LEITURA\s+BÍBLICA(\s+EM\s+CLASSE)?|INTRODUÇÃO|CONCLUSÃO|LIÇÃO\s+\d+|[IVXLCDM]+\s*[-–—]\s*[^.]+)$/i;
+    for (const sh of extractedShapes) {
+      const st = sh.text.trim();
+      if (canonicalPattern.test(st)) {
+        if (!slideTitle || st.length < slideTitle.length) {
+          slideTitle = st;
+        }
+      }
+    }
 
-    const isVisualSlide = Boolean(primaryImageUrl);
-    const compactTitle = slideTitle && slideTitle.length <= 32 ? slideTitle : `Slide ${entry.index}`;
+    // 2. Se não achou canônico, verifica placeholder de título
+    if (!slideTitle) {
+      for (const sh of extractedShapes) {
+        if (sh.isTitlePlaceholder && sh.text.trim().length <= 60) {
+          slideTitle = sh.text.trim();
+          break;
+        }
+      }
+    }
 
-    // Cria o slide nativo Altaris
-    // Slides visuais (com imagens/ilustrações) têm text: "" para não carimbar texto de hinos sobre a arte
-    slides.push({
-      id: `pptx-native-${Date.now()}-${entry.index}`,
-      title: compactTitle,
-      header: baseTitle,
-      text: isVisualSlide ? "" : fullBodyText,
-      category: isVisualSlide ? "media" : (isBibleRef ? "bible" : "verse"),
-      mediaUrl: primaryImageUrl,
-      mediaType: primaryImageUrl ? "image" : undefined,
-      background: primaryImageUrl
-        ? { type: "image", value: primaryImageUrl }
-        : { type: "gradient", value: "nebula" }
-    });
+    // 3. Separa formas de texto que não são o título
+    for (const sh of extractedShapes) {
+      if (sh.text.trim() === slideTitle) continue;
+      bodyParagraphs.push(sh.text.trim());
+    }
+
+    // 4. Se ainda sem título e temos formas curtas (< 45 chars)
+    if (!slideTitle && bodyParagraphs.length > 0) {
+      const shortIdx = bodyParagraphs.findIndex(b => b.length <= 45 && !b.includes("\n") && !b.endsWith("."));
+      if (shortIdx !== -1) {
+        slideTitle = bodyParagraphs[shortIdx];
+        bodyParagraphs.splice(shortIdx, 1);
+      }
+    }
+
+    if (!slideTitle) {
+      slideTitle = `Slide ${entry.index}`;
+    }
+
+    const fullBodyText = bodyParagraphs.join("\n\n").trim();
+
+    // Detecção bíblica simples (ex: Jr 2.13, Sl 78.37, João 3:16, Dt 4.1)
+    const combined = `${slideTitle} ${fullBodyText}`;
+    const isBibleRef = /\b([1-3]?\s?[A-Za-zçãéíóú]{2,12})\s+\d+[:.]\d+/i.test(combined) ||
+                       /\b(Jr|Sl|Mt|Mc|Lc|Jo|Rm|Ef|Fp|Cl|Hb|Ap|Deuteronômio|Salmos?|Mateus|João)\b/i.test(combined);
+
+    // Se o slide não tem NENHUM texto (slide puramente visual ou gráfico)
+    const isPureVisual = !fullBodyText && !slideTitle.replace(/^Slide \d+$/, "").trim();
+
+    if (isPureVisual && primaryImageUrl) {
+      slides.push({
+        id: `pptx-native-${Date.now()}-${entry.index}`,
+        title: `Slide ${entry.index}`,
+        header: baseTitle,
+        text: "",
+        category: "media",
+        mediaUrl: primaryImageUrl,
+        mediaType: "image",
+        background: { type: "image", value: primaryImageUrl }
+      });
+    } else {
+      // Slide de conteúdo nativo Altaris com texto ajustável e tipografia profissional
+      slides.push({
+        id: `pptx-native-${Date.now()}-${entry.index}`,
+        title: slideTitle,
+        header: isBibleRef ? slideTitle : baseTitle,
+        text: fullBodyText,
+        category: isBibleRef ? "bible" : "verse",
+        mediaUrl: primaryImageUrl,
+        mediaType: primaryImageUrl ? "image" : undefined,
+        background: primaryImageUrl
+          ? { type: "image", value: primaryImageUrl }
+          : { type: "gradient", value: "nebula" }
+      });
+    }
   }
 
   return slides;
 }
 
 /**
- * Conector opcional com IA Local (Ollama ou LLM local compatível com API OpenAI).
- * Permite resumir tópicos extensos de lições da EBD em slides enxutos para projeção.
+ * Verifica se o servidor local do Ollama está rodando e lista modelos disponíveis.
+ */
+export async function checkOllamaStatus(
+  ollamaEndpoint: string = "http://localhost:11434"
+): Promise<{ available: boolean; models: string[]; recommendedModel?: string }> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1600);
+    const res = await fetch(`${ollamaEndpoint}/api/tags`, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (!res.ok) return { available: false, models: [] };
+    const data = await res.json();
+    const models: string[] = (data.models || []).map((m: any) => m.name || m.model || "");
+    const recommended = models.find(m => m.includes("llama3.2") || m.includes("llama3") || m.includes("phi3") || m.includes("gemma2")) || models[0];
+
+    return {
+      available: true,
+      models,
+      recommendedModel: recommended
+    };
+  } catch {
+    return { available: false, models: [] };
+  }
+}
+
+/**
+ * Conector com IA Local (Ollama) para resumir e diagramar lições extensas de EBD
+ * em tópicos limpos de 3-4 linhas perfeitamente encaixados para o telão 16:9.
  */
 export async function optimizeSlideWithLocalAI(
   title: string,
   rawText: string,
+  modelName: string = "llama3.2",
   ollamaEndpoint: string = "http://localhost:11434"
-): Promise<{ title: string; bullets: string[] } | null> {
-  const prompt = `Você é um assistente de projeção de igreja e professor de EBD.
-Resuma e formate o seguinte conteúdo para apresentação em telão 16:9 de forma clara, bonita e sem textos longos.
+): Promise<{ title: string; text: string } | null> {
+  const prompt = `Você é um especialista em projeção de igreja e professor de EBD.
+Resuma e formate o conteúdo a seguir para exibição em telão 16:9 de forma clara, bonita e sem textos longos.
 Regras:
-1. Máximo de 3 a 4 linhas por slide.
-2. Destaque versículos bíblicos se houver.
-3. Retorne no formato JSON: {"title": "...", "bullets": ["linha 1", "linha 2"]}
+1. Máximo de 3 a 4 tópicos curtos iniciados com bullet (•).
+2. Se houver versículo bíblico, destaque-o no final com emoji de livro (📖).
+3. Seja fiel à mensagem teológica sem alterar o sentido.
+4. Responda APENAS com o texto formatado final, sem introduções ou explicações.
 
-Título atual: ${title}
+Título: ${title}
 Conteúdo:
 ${rawText}
 `;
@@ -197,22 +289,23 @@ ${rawText}
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "llama3.2",
+        model: modelName,
         prompt,
-        stream: false,
-        format: "json"
+        stream: false
       })
     });
 
     if (!res.ok) return null;
     const data = await res.json();
-    const parsed = JSON.parse(data.response);
+    const responseText = (data.response || "").trim();
+    if (!responseText) return null;
+
     return {
-      title: parsed.title || title,
-      bullets: Array.isArray(parsed.bullets) ? parsed.bullets : [rawText]
+      title,
+      text: responseText
     };
   } catch (err) {
-    console.warn("IA Local (Ollama) não disponível no momento:", err);
+    console.warn("IA Local (Ollama) falhou:", err);
     return null;
   }
 }

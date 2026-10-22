@@ -458,6 +458,11 @@ export class SlideCompositor {
       this.ctx.clearRect(0, 0, VW, VH);
     } else if (this.slideMediaImg) {
       this.drawContainSource(this.slideMediaImg, this.slideMediaImg.naturalWidth, this.slideMediaImg.naturalHeight);
+      if (this.currentSlide?.text?.trim()) {
+        const dimmer = this.options.backgroundDimmer ?? 0.65;
+        this.ctx.fillStyle = `rgba(0, 0, 0, ${dimmer})`;
+        this.ctx.fillRect(0, 0, VW, VH);
+      }
     }
   }
 
@@ -578,10 +583,14 @@ export class SlideCompositor {
     const top = (VH - blockH) / 2 + (showHeader && !isFooter ? headerH / 2 : 0);
 
     // Header (Top)
-    if (showHeader && !isFooter && slide.header) {
+    const headerTitle = (slide.title && !slide.title.startsWith("Slide "))
+      ? slide.title
+      : (slide.category === "bible" ? (slide.header || "") : "");
+
+    if (showHeader && !isFooter && headerTitle) {
       ctx.font = `600 34px ${activeFont}`;
       ctx.fillStyle = "#a5b4fc";
-      ctx.fillText(slide.header.toUpperCase(), VW / 2, top - 30);
+      ctx.fillText(headerTitle.toUpperCase(), VW / 2, top - 30);
     }
 
     // Main Lines

@@ -211,33 +211,14 @@ export async function processImportFiles(
 
         let slides: Slide[] = [];
 
-        // 1. Prioridade: Conversão via motor LibreOffice -> PDF com alta fidelidade visual
+        // 1. Modo Nativo Altaris: Instantâneo (< 1s), 100% editável e com controle total de fontes e temas
         try {
-          const pdfFile = await convertPresentationToPdf(f, (pct, count, sub) => {
-            updateLoadingHUD(pct, count, sub);
+          slides = await parsePptxNative(f, (curr, tot, msg) => {
+            const pct = 20 + Math.round((curr / tot) * 75);
+            updateLoadingHUD(pct, `${curr} / ${tot}`, msg);
           });
-
-          if (pdfFile) {
-            slides = await convertPdfToSlides(pdfFile, (curr, tot, msg) => {
-              const pct = 50 + Math.round((curr / tot) * 45);
-              updateLoadingHUD(pct, `${curr} / ${tot}`, msg);
-            });
-          }
-        } catch (pdfErr) {
-          console.warn("Falha na renderização de apresentação via PDF:", pdfErr);
-        }
-
-        // 2. Fallback: Se o LibreOffice não estiver disponível ou falhar, extração nativa PPTX
-        if (!slides || slides.length === 0) {
-          updateLoadingHUD(40, "Extraindo conteúdo...", "Lendo formato PPTX nativo...");
-          try {
-            slides = await parsePptxNative(f, (curr, tot, msg) => {
-              const pct = 40 + Math.round((curr / tot) * 50);
-              updateLoadingHUD(pct, `${curr} / ${tot}`, msg);
-            });
-          } catch (nativeErr) {
-            console.warn("Falha no extrator nativo PPTX:", nativeErr);
-          }
+        } catch (nativeErr) {
+          console.warn("Falha no extrator nativo PPTX, tentando conversor de emergência:", nativeErr);
         }
 
         // 3. Fallback de emergência (extrai textos simples)
