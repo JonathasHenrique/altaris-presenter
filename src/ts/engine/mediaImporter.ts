@@ -120,7 +120,7 @@ export async function convertPdfToSlides(
       const dataUrl = canvas.toDataURL("image/png");
       slides.push({
         id: `pdf-${Date.now()}-${pageNum}`,
-        title: `${baseTitle} - Slide ${pageNum}/${numPages}`,
+        title: `Slide ${pageNum}/${numPages}`,
         header: `${baseTitle}`,
         text: "",
         category: "media",
@@ -253,20 +253,23 @@ export async function processImportFiles(
           throw new Error(`Não foi possível processar "${f.name}". Certifique-se de que o arquivo não está corrompido ou instale o LibreOffice.`);
         }
 
-        // 4. Executa Auditoria Inteligente de Layout, Fontes e Risco de Transbordo
+        // 4. Executa Auditoria Inteligente de Layout apenas se não foi renderizado em PDF vetorial
         let auditReport: any = null;
-        try {
-          auditReport = await auditPptxPresentation(f);
-          if (auditReport && slides.length > 0) {
-            auditReport.items.forEach((it: any, sIdx: number) => {
-              if (slides[sIdx]) {
-                slides[sIdx].auditStatus = it.status;
-                slides[sIdx].auditIssue = it.issue;
-              }
-            });
+        const isVectorRendered = slides.length > 0 && slides[0].id.startsWith("pdf-");
+        if (!isVectorRendered) {
+          try {
+            auditReport = await auditPptxPresentation(f);
+            if (auditReport && slides.length > 0) {
+              auditReport.items.forEach((it: any, sIdx: number) => {
+                if (slides[sIdx] && slides[sIdx].category !== "media") {
+                  slides[sIdx].auditStatus = it.status;
+                  slides[sIdx].auditIssue = it.issue;
+                }
+              });
+            }
+          } catch (auditErr) {
+            console.warn("Falha na auditoria de layout da apresentação:", auditErr);
           }
-        } catch (auditErr) {
-          console.warn("Falha na auditoria de layout da apresentação:", auditErr);
         }
 
         if (slides.length > 0) {

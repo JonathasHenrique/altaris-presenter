@@ -142,10 +142,6 @@ export async function parsePptxNative(
       }
     }
 
-    if (!slideTitle) {
-      slideTitle = `${baseTitle} • Slide ${entry.index}`;
-    }
-
     // Concatena blocos de texto respeitando parágrafos
     const fullBodyText = contentBlocks.join("\n\n").trim();
 
@@ -153,13 +149,17 @@ export async function parsePptxNative(
     const isBibleRef = /\b([1-3]?\s?[A-Za-zçãéíóú]{2,12})\s+\d+[:.]\d+/i.test(fullBodyText) ||
                        /\b(Jr|Sl|Mt|Mc|Lc|Jo|Rm|Ef|Fp|Cl|Hb|Ap)\s+\d+/i.test(fullBodyText);
 
+    const isVisualSlide = Boolean(primaryImageUrl);
+    const compactTitle = slideTitle && slideTitle.length <= 32 ? slideTitle : `Slide ${entry.index}`;
+
     // Cria o slide nativo Altaris
+    // Slides visuais (com imagens/ilustrações) têm text: "" para não carimbar texto de hinos sobre a arte
     slides.push({
       id: `pptx-native-${Date.now()}-${entry.index}`,
-      title: slideTitle,
+      title: compactTitle,
       header: baseTitle,
-      text: fullBodyText,
-      category: isBibleRef ? "bible" : (primaryImageUrl ? "media" : "verse"),
+      text: isVisualSlide ? "" : fullBodyText,
+      category: isVisualSlide ? "media" : (isBibleRef ? "bible" : "verse"),
       mediaUrl: primaryImageUrl,
       mediaType: primaryImageUrl ? "image" : undefined,
       background: primaryImageUrl

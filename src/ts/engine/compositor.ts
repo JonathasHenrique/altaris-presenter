@@ -409,12 +409,15 @@ export class SlideCompositor {
     }
 
     if (!this.options.isClearText && this.currentSlide && this.currentSlide.text.trim()) {
-      const displaySlide: Slide = this.options.uppercaseLyrics
-        ? { ...this.currentSlide, text: this.currentSlide.text.toUpperCase() }
-        : this.currentSlide;
+      // Slides de apresentação visual (imagens completas) não têm texto de hino projetado por cima
+      if (this.currentSlide.category !== "media" || !this.currentSlide.mediaUrl) {
+        const displaySlide: Slide = this.options.uppercaseLyrics
+          ? { ...this.currentSlide, text: this.currentSlide.text.toUpperCase() }
+          : this.currentSlide;
 
-      if (this.options.layout === "lowerThird") this.drawLowerThird(displaySlide);
-      else this.drawFullSlide(displaySlide);
+        if (this.options.layout === "lowerThird") this.drawLowerThird(displaySlide);
+        else this.drawFullSlide(displaySlide);
+      }
     }
 
     if (this.options.alertText) this.drawAlertBanner(this.options.alertText);

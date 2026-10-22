@@ -2,7 +2,7 @@ const { app, BrowserWindow, screen, ipcMain, shell, Menu, MenuItem } = require("
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
-const { spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const { startServer } = require("./server");
 
 // Flatpak and container sandbox compatibility
@@ -22,20 +22,73 @@ let stageWindow = null;
 let serverInstance = null;
 const isDev = process.env.NODE_ENV === "development" || process.argv.includes("--dev");
 
-function findSofficeBinary() {
+function getPresentationCacheDir(sub = "altaris-presentations") {
+  // ~/.cache é compartilhado entre a sandbox Flatpak (--filesystem=home) e o LibreOffice do host
+  const base = process.platform === "win32" ? os.tmpdir() : path.join(os.homedir(), ".cache");
+  const dir = path.join(base, sub);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function resolveSofficeExecutor() {
+  const isFlatpak = Boolean(process.env.FLATPAK_ID || fs.existsSync("/.flatpak-info"));
+  if (isFlatpak) {
+    return {
+      type: "flatpak",
+      bin: "flatpak-spawn",
+      prefixArgs: ["--host", "soffice"]
+    };
+  }
+
   if (process.platform === "win32") {
     const candidates = [
       "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
       "C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe",
       path.join(process.env.LOCALAPPDATA || "", "Programs", "LibreOffice", "program", "soffice.exe"),
       path.join(process.env.ProgramFiles || "C:\\Program Files", "LibreOffice", "program", "soffice.exe"),
-      path.join(process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)", "LibreOffice", "program", "soffice.exe")
+      path.join(process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)", "LibreOffice", "program", "soffice.exe"),
+      path.join(process.env.ProgramW6432 || "C:\\Program Files", "LibreOffice", "program", "soffice.exe")
     ];
     for (const c of candidates) {
-      if (fs.existsSync(c)) return c;
+      if (c && fs.existsSync(c)) return { type: "win32", bin: c, prefixArgs: [] };
     }
+    try {
+      const check = spawnSync("where.exe", ["soffice.exe"], { encoding: "utf8" });
+      if (check.status === 0 && check.stdout) {
+        const found = check.stdout.trim().split(/\r?\n/)[0];
+        if (found && fs.existsSync(found)) {
+          return { type: "win32", bin: found, prefixArgs: [] };
+        }
+      }
+    } catch {}
+    return { type: "win32", bin: "soffice.exe", prefixArgs: [], notFound: true };
   }
-  return "soffice";
+
+  // Linux / macOS (AppImage, local dev, pacote do sistema)
+  const candidates = [
+    "/usr/bin/soffice",
+    "/usr/local/bin/soffice",
+    "/usr/bin/libreoffice",
+    "/usr/local/bin/libreoffice",
+    "/bin/soffice",
+    "/bin/libreoffice",
+    "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+    "/var/lib/flatpak/exports/bin/org.libreoffice.LibreOffice",
+    path.join(os.homedir(), ".local/share/flatpak/exports/bin/org.libreoffice.LibreOffice")
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return { type: "native", bin: c, prefixArgs: [] };
+  }
+  try {
+    const check = spawnSync("which", ["soffice"], { encoding: "utf8" });
+    if (check.status === 0 && check.stdout) {
+      const found = check.stdout.trim().split(/\r?\n/)[0];
+      if (found && fs.existsSync(found)) {
+        return { type: "native", bin: found, prefixArgs: [] };
+      }
+    }
+  } catch {}
+  return { type: "native", bin: "soffice", prefixArgs: [] };
 }
 
 function loadWindowPage(win, file) {
@@ -166,14 +219,20 @@ function setupIpcHandlers() {
 
   ipcMain.handle("read_app_file", async (_, { relativePath }) => {
     const cleanRel = relativePath.replace(/^(\.\/|\/)/, "");
+    const appBase = typeof app.getAppPath === "function" ? app.getAppPath() : __dirname;
     const candidatePaths = [
+      path.join(appBase, cleanRel),
+      path.join(appBase, "dist", cleanRel),
+      path.join(appBase, "public", cleanRel),
       path.join(__dirname, cleanRel),
       path.join(__dirname, "dist", cleanRel),
       path.join(__dirname, "..", cleanRel),
       path.join(__dirname, "..", "public", cleanRel),
       path.join(process.resourcesPath || "", cleanRel),
+      path.join(process.resourcesPath || "", "public", cleanRel),
       path.join(process.resourcesPath || "", "app.asar", cleanRel),
-      path.join(process.resourcesPath || "", "app.asar", "dist", cleanRel)
+      path.join(process.resourcesPath || "", "app.asar", "dist", cleanRel),
+      path.join(process.resourcesPath || "", "app.asar", "public", cleanRel)
     ];
     for (const p of candidatePaths) {
       if (fs.existsSync(p)) {
@@ -184,8 +243,7 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle("cache_presentation_file", async (_, { filename, data }) => {
-    const tempDir = path.join(os.tmpdir(), "altaris-presentations");
-    fs.mkdirSync(tempDir, { recursive: true });
+    const tempDir = getPresentationCacheDir("altaris-presentations");
     const target = path.join(tempDir, filename);
     const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
     fs.writeFileSync(target, buf);
@@ -201,35 +259,35 @@ function setupIpcHandlers() {
 
   ipcMain.handle("launch_libreoffice_presentation", async (_, { filePath, slideIndex }) => {
     try {
-      const sofficeBin = findSofficeBinary();
-      if (process.platform === "win32" && !fs.existsSync(sofficeBin)) {
+      const executor = resolveSofficeExecutor();
+      if (executor.notFound) {
         return {
           success: false,
-          error: "LibreOffice não foi detectado no Windows. Para exibir apresentações com transições nativas, instale o LibreOffice gratuito (https://www.libreoffice.org)."
+          error: "LibreOffice não foi detectado no sistema. Para exibir apresentações com transições nativas, instale o LibreOffice gratuito (https://www.libreoffice.org)."
         };
       }
 
-      const profileDir = path.join(os.tmpdir(), "altaris-lo-profile");
-      fs.mkdirSync(profileDir, { recursive: true });
+      const profileDir = getPresentationCacheDir("altaris-lo-profile");
       const profileUrl = `file://${profileDir.replace(/\\/g, "/")}`;
 
-      const args = [
+      const runArgs = [
+        ...executor.prefixArgs,
         `-env:UserInstallation=${profileUrl}`,
         "--nologo",
         "--norestore"
       ];
       if (slideIndex && slideIndex > 0) {
-        args.push(`--show=${slideIndex}`);
+        runArgs.push(`--show=${slideIndex}`);
       } else {
-        args.push("--show");
+        runArgs.push("--show");
       }
-      args.push(filePath);
+      runArgs.push(filePath);
 
       const env = { ...process.env, SAL_USE_VCLPLUGIN: "gtk3", SAL_DISABLE_OPENCL: "1", P11_KIT_DEBUG: "none" };
       return new Promise((resolve) => {
         let child;
         try {
-          child = spawn(sofficeBin, args, { env, detached: true, stdio: "ignore" });
+          child = spawn(executor.bin, runArgs, { env, detached: true, stdio: "ignore" });
         } catch (e) {
           return resolve({ success: false, error: "Falha ao executar LibreOffice: " + (e.message || String(e)) });
         }
@@ -252,23 +310,34 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle("convert_presentation_to_pdf", async (_, { filename, data }) => {
-    const sofficeBin = findSofficeBinary();
-    if (process.platform === "win32" && !fs.existsSync(sofficeBin)) {
-      throw new Error("LibreOffice não instalado no Windows.");
+    const executor = resolveSofficeExecutor();
+    if (executor.notFound) {
+      throw new Error("LibreOffice não foi detectado no computador. Instale o LibreOffice (https://www.libreoffice.org).");
     }
 
-    const tempDir = path.join(os.tmpdir(), "altaris-convert");
-    fs.mkdirSync(tempDir, { recursive: true });
+    const tempDir = getPresentationCacheDir("altaris-convert");
     const inPath = path.join(tempDir, filename);
     const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
     fs.writeFileSync(inPath, buf);
 
+    const profileDir = getPresentationCacheDir("altaris-lo-profile");
+    const profileUrl = `file://${profileDir.replace(/\\/g, "/")}`;
+
+    const runArgs = [
+      ...executor.prefixArgs,
+      `-env:UserInstallation=${profileUrl}`,
+      "--headless",
+      "--convert-to", "pdf:impress_pdf_Export",
+      "--outdir", tempDir,
+      inPath
+    ];
+
     return new Promise((resolve, reject) => {
       let child;
       try {
-        child = spawn(sofficeBin, ["--headless", "--convert-to", "pdf", "--outdir", tempDir, inPath]);
+        child = spawn(executor.bin, runArgs);
       } catch (err) {
-        return reject(new Error("LibreOffice não instalado"));
+        return reject(new Error("LibreOffice não instalado: " + (err.message || String(err))));
       }
 
       child.on("error", (err) => {
@@ -284,7 +353,7 @@ function setupIpcHandlers() {
             return;
           }
         }
-        reject(new Error("Falha ao converter apresentação via LibreOffice"));
+        reject(new Error(`Falha ao converter apresentação via LibreOffice (código ${code})`));
       });
     });
   });

@@ -509,6 +509,8 @@ function renderSlideMatrix(item: PlaylistItem) {
         ? "slide-badge-bridge"
         : slide.category === "bible"
         ? "slide-badge-bible"
+        : slide.category === "media"
+        ? "slide-badge-media"
         : "slide-badge-pill";
 
     let previewBody = `<div class="slide-text-preview">${slide.text.replace(/\n/g, "<br>")}</div>`;
@@ -527,7 +529,7 @@ function renderSlideMatrix(item: PlaylistItem) {
           </div>
         `;
       } else {
-        previewBody = `<div style="font-size: 0.8rem; color: #38bdf8; font-weight: 700;">🖼️ Imagem / Slide em Tela Cheia</div>`;
+        previewBody = `<div class="slide-visual-preview" style="min-height: 84px;"></div>`;
       }
     }
 
@@ -535,7 +537,7 @@ function renderSlideMatrix(item: PlaylistItem) {
       <div class="slide-card-header">
         <span class="slide-badge-pill ${badgeClass}">${slide.title}</span>
         <div class="slide-status-tag-area">
-          ${slide.auditStatus === "overflow" || slide.auditStatus === "warning" ? `<span class="slide-badge-pill" style="background: rgba(245, 158, 11, 0.22); border: 1px solid rgba(245, 158, 11, 0.5); color: #fbbf24; font-size: 0.62rem; margin-right: 4px;" title="${slide.auditIssue || "Aviso de transbordo"}">⚠️ Transbordo</span>` : ""}
+          ${(slide.auditStatus === "overflow" || slide.auditStatus === "warning") && slide.category !== "media" ? `<span class="slide-badge-pill" style="background: rgba(245, 158, 11, 0.22); border: 1px solid rgba(245, 158, 11, 0.5); color: #fbbf24; font-size: 0.62rem; margin-right: 4px;" title="${slide.auditIssue || "Aviso de transbordo"}">⚠️ Transbordo</span>` : ""}
           ${isLive ? '<span class="status-tag-live">🔴 NO AR</span>' : isThisStaged ? '<span class="status-tag-staged">🟡 PRÉVIA</span>' : ''}
         </div>
       </div>
