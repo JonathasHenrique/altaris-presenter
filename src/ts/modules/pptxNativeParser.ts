@@ -1,10 +1,43 @@
-// Altaris PPTX Native Presentation Extractor & Slide Rebuilder
-// Extrai apresentações instantaneamente (< 1s), mantendo textos dinâmicos e editáveis,
-// com suporte a Auto-Fit do Altaris e Otimização opcional via IA Local (Ollama).
-import type { Slide } from "../engine/state";
+// Altaris PPTX Native Presentation Viewer & Layout Engine
+// Extrai apresentações instantaneamente (< 0.5s), mantendo textos dinâmicos e editáveis,
+// com suporte a Auto-Fit do Altaris, visualização vetorial proporcional e Otimização opcional via IA Local (Ollama).
+import type { Slide, SlideLayout, SlideElement, SlideElementParagraph } from "../engine/state";
 
 interface ExtractedMedia {
   [rId: string]: string; // Data URL (base64)
+}
+
+function getLocalName(el: Element): string {
+  return (el.localName || el.tagName.split(":").pop() || "").toLowerCase();
+}
+
+function findFirstDescendant(parent: Element, name: string): Element | null {
+  const target = name.toLowerCase();
+  const all = parent.getElementsByTagName("*");
+  for (let i = 0; i < all.length; i++) {
+    if (getLocalName(all[i]) === target) return all[i];
+  }
+  return null;
+}
+
+function findAllDescendants(parent: Element, name: string): Element[] {
+  const target = name.toLowerCase();
+  const all = parent.getElementsByTagName("*");
+  const res: Element[] = [];
+  for (let i = 0; i < all.length; i++) {
+    if (getLocalName(all[i]) === target) res.push(all[i]);
+  }
+  return res;
+}
+
+function parseColor(node: Element | null): string | undefined {
+  if (!node) return undefined;
+  const srgb = findFirstDescendant(node, "srgbClr");
+  if (srgb) {
+    const val = srgb.getAttribute("val");
+    if (val) return `#${val}`;
+  }
+  return undefined;
 }
 
 function isFooterNoise(t: string): boolean {
@@ -23,8 +56,8 @@ function cleanText(t: string): string {
 }
 
 /**
- * Lê um arquivo .pptx e reconstrói apresentações nativas como slides editáveis do Altaris
- * em menos de 1 segundo, sem depender de conversões pesadas do LibreOffice.
+ * Lê um arquivo .pptx e reconstrói apresentações com layout vetorial proporcional e textos editáveis
+ * em menos de 1 segundo, sem depender de conversões externas.
  */
 export async function parsePptxNative(
   file: File,
@@ -37,8 +70,31 @@ export async function parsePptxNative(
 
   const baseTitle = file.name.replace(/\.[^/.]+$/, "");
   const slides: Slide[] = [];
+  const parser = new DOMParser();
 
-  // 1. Encontra todos os slides ordenados numericamente
+  // 1. Dimensões da apresentação em EMU (padrão 16:9 -> 12192000 x 6858000)
+  let slideWidthEmu = 12192000;
+  let slideHeightEmu = 6858000;
+
+  try {
+    const presXml = await zip.file("ppt/presentation.xml")?.async("text");
+    if (presXml) {
+      const presDoc = parser.parseFromString(presXml, "application/xml");
+      const sldSz = findFirstDescendant(presDoc.documentElement, "sldsz");
+      if (sldSz) {
+        const cx = parseInt(sldSz.getAttribute("cx") || "0", 10);
+        const cy = parseInt(sldSz.getAttribute("cy") || "0", 10);
+        if (cx > 0 && cy > 0) {
+          slideWidthEmu = cx;
+          slideHeightEmu = cy;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Aviso ao ler dimensões de ppt/presentation.xml:", e);
+  }
+
+  // 2. Encontra todos os slides ordenados numericamente
   const slideEntries: { index: number; path: string; relsPath: string }[] = [];
   zip.forEach((relPath: string) => {
     const match = relPath.match(/^ppt\/slides\/slide(\d+)\.xml$/i);
@@ -56,38 +112,42 @@ export async function parsePptxNative(
   const total = slideEntries.length;
   if (total === 0) return [];
 
-  const parser = new DOMParser();
+  // 3. Itera por cada slide
+  for (let sIdx = 0; sIdx < total; sIdx++) {
+    const entry = slideEntries[sIdx];
+    if (onProgress) {
+      onProgress(sIdx + 1, total, `Processando slide ${sIdx + 1} de ${total}...`);
+    }
 
-  // 2. Processa cada slide individualmente
-  for (let i = 0; i < total; i++) {
-    const entry = slideEntries[i];
-    onProgress?.(i + 1, total, `Carregando slide ${i + 1} de ${total}...`);
-
-    // A. Mapeia imagens do slide a partir do arquivo .rels
+    // A. Mapeia mídias/imagens do slide
     const mediaMap: ExtractedMedia = {};
-    const relsXml = await zip.file(entry.relsPath)?.async("text");
-    if (relsXml) {
+    const relsFile = zip.file(entry.relsPath);
+    if (relsFile) {
       try {
+        const relsXml = await relsFile.async("text");
         const relsDoc = parser.parseFromString(relsXml, "application/xml");
-        const relNodes = relsDoc.getElementsByTagName("Relationship");
-        for (let r = 0; r < relNodes.length; r++) {
-          const rNode = relNodes[r];
-          const rId = rNode.getAttribute("Id") || "";
-          const target = rNode.getAttribute("Target") || "";
-          const type = rNode.getAttribute("Type") || "";
+        const relationships = relsDoc.getElementsByTagName("Relationship");
 
-          if (type.includes("image") || /\.(png|jpe?g|webp|gif|svg)$/i.test(target)) {
-            const normalized = target.startsWith("../")
-              ? `ppt/${target.substring(3)}`
-              : target.startsWith("ppt/")
-                ? target
-                : `ppt/slides/${target}`;
+        for (let r = 0; r < relationships.length; r++) {
+          const rel = relationships[r];
+          const rId = rel.getAttribute("Id") || "";
+          const target = rel.getAttribute("Target") || "";
+          const type = rel.getAttribute("Type") || "";
 
+          if (type.includes("image") || /\.(png|jpe?g|gif|webp|svg)$/i.test(target)) {
+            const normalized = target.replace(/^\.\.\//, "ppt/");
             const mediaFile = zip.file(normalized);
             if (mediaFile) {
               const base64 = await mediaFile.async("base64");
               const ext = target.split(".").pop()?.toLowerCase() || "png";
-              const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "svg" ? "image/svg+xml" : "image/png";
+              const mime =
+                ext === "jpg" || ext === "jpeg"
+                  ? "image/jpeg"
+                  : ext === "svg"
+                  ? "image/svg+xml"
+                  : ext === "webp"
+                  ? "image/webp"
+                  : "image/png";
               mediaMap[rId] = `data:${mime};base64,${base64}`;
             }
           }
@@ -103,59 +163,217 @@ export async function parsePptxNative(
 
     const doc = parser.parseFromString(slideXml, "application/xml");
 
-    // Identifica imagem principal do slide (fundo ou ilustração)
-    let primaryImageUrl: string | undefined = undefined;
-    const blipNodes = doc.getElementsByTagName("a:blip");
-    for (let b = 0; b < blipNodes.length; b++) {
-      const embedId = blipNodes[b].getAttribute("r:embed") || blipNodes[b].getAttribute("r:link");
-      if (embedId && mediaMap[embedId]) {
-        primaryImageUrl = mediaMap[embedId];
-        break;
+    // Identifica fundo do slide (<p:bg>)
+    let slideBgImage: string | undefined = undefined;
+    let slideBgColor: string | undefined = undefined;
+
+    const bgNode = findFirstDescendant(doc.documentElement, "bg");
+    if (bgNode) {
+      const blip = findFirstDescendant(bgNode, "blip");
+      if (blip) {
+        const embedId = blip.getAttribute("r:embed") || blip.getAttribute("embed") || "";
+        if (embedId && mediaMap[embedId]) {
+          slideBgImage = mediaMap[embedId];
+        }
+      }
+      if (!slideBgImage) {
+        slideBgColor = parseColor(bgNode);
       }
     }
 
-    // C. Extrai formas de texto (<p:sp>)
-    const shapes = doc.getElementsByTagName("p:sp");
-    const extractedShapes: { isTitlePlaceholder: boolean; text: string }[] = [];
+    // C. Percorre a Árvore de Formas (<p:spTree>) preservando ordem Z
+    const elements: SlideElement[] = [];
+    const extractedShapesForTitle: { isTitlePlaceholder: boolean; text: string }[] = [];
+    let primaryImageUrl: string | undefined = slideBgImage;
 
-    for (let s = 0; s < shapes.length; s++) {
-      const sp = shapes[s];
-      const ph = sp.getElementsByTagName("p:ph")[0];
-      const phType = ph ? ph.getAttribute("type") : null;
-      const isTitlePlaceholder = phType === "title" || phType === "ctrTitle";
+    const spTree = findFirstDescendant(doc.documentElement, "sptree");
+    const shapeNodes = spTree ? Array.from(spTree.children) : [];
 
-      const txBody = sp.getElementsByTagName("p:txBody")[0];
-      if (!txBody) continue;
+    for (let c = 0; c < shapeNodes.length; c++) {
+      const child = shapeNodes[c];
+      const tag = getLocalName(child);
 
-      const paragraphs = txBody.getElementsByTagName("a:p");
-      const shapeLines: string[] = [];
+      // 1. FORMAS E TEXTOS (<p:sp>)
+      if (tag === "sp") {
+        const xfrm = findFirstDescendant(child, "xfrm");
+        const off = xfrm ? findFirstDescendant(xfrm, "off") : null;
+        const ext = xfrm ? findFirstDescendant(xfrm, "ext") : null;
 
-      for (let p = 0; p < paragraphs.length; p++) {
-        const pElem = paragraphs[p];
-        const textNodes = pElem.getElementsByTagName("a:t");
-        let line = "";
-        for (let t = 0; t < textNodes.length; t++) {
-          line += textNodes[t].textContent || "";
+        let x = 0, y = 0, w = 0, h = 0;
+        if (off && ext) {
+          const offX = parseInt(off.getAttribute("x") || "0", 10);
+          const offY = parseInt(off.getAttribute("y") || "0", 10);
+          const extW = parseInt(ext.getAttribute("cx") || "0", 10);
+          const extH = parseInt(ext.getAttribute("cy") || "0", 10);
+          x = Math.max(0, Math.min(100, (offX / slideWidthEmu) * 100));
+          y = Math.max(0, Math.min(100, (offY / slideHeightEmu) * 100));
+          w = Math.max(0, Math.min(100, (extW / slideWidthEmu) * 100));
+          h = Math.max(0, Math.min(100, (extH / slideHeightEmu) * 100));
         }
-        line = cleanText(line);
-        if (line && !isFooterNoise(line)) {
-          shapeLines.push(line);
+
+        // Estilos da forma
+        const spPr = findFirstDescendant(child, "sppr");
+        let bgColor: string | undefined = undefined;
+        let borderColor: string | undefined = undefined;
+        let borderRadius: number | undefined = undefined;
+
+        if (spPr) {
+          bgColor = parseColor(findFirstDescendant(spPr, "solidfill"));
+          const ln = findFirstDescendant(spPr, "ln");
+          if (ln) borderColor = parseColor(ln);
+          const geom = findFirstDescendant(spPr, "prstgeom");
+          if (geom && geom.getAttribute("prst") === "roundRect") {
+            borderRadius = 14;
+          }
+        }
+
+        // Extrai parágrafos de texto
+        const txBody = findFirstDescendant(child, "txbody");
+        const paragraphs: SlideElementParagraph[] = [];
+        const shapeLines: string[] = [];
+        let shapeColor: string | undefined = undefined;
+        let shapeAlign: "left" | "center" | "right" = "left";
+        let shapeFontSize: number | undefined = undefined;
+        let shapeBold = false;
+        let shapeItalic = false;
+
+        if (txBody) {
+          const pNodes = findAllDescendants(txBody, "p");
+          for (const pElem of pNodes) {
+            const pPr = findFirstDescendant(pElem, "ppr");
+            const algnAttr = pPr?.getAttribute("algn") || "l";
+            const align: "left" | "center" | "right" =
+              algnAttr === "ctr" ? "center" : algnAttr === "r" ? "right" : "left";
+            shapeAlign = align;
+
+            const rNodes = findAllDescendants(pElem, "r");
+            let lineText = "";
+            let pFontSize: number | undefined = undefined;
+            let pBold = false;
+            let pItalic = false;
+            let pColor: string | undefined = undefined;
+
+            if (rNodes.length > 0) {
+              for (const rElem of rNodes) {
+                const rPr = findFirstDescendant(rElem, "rpr");
+                if (rPr) {
+                  const sz = parseInt(rPr.getAttribute("sz") || "0", 10);
+                  if (sz > 0 && !pFontSize) pFontSize = sz;
+                  if (rPr.getAttribute("b") === "1") pBold = true;
+                  if (rPr.getAttribute("i") === "1") pItalic = true;
+                  const c = parseColor(rPr);
+                  if (c && !pColor) pColor = c;
+                }
+                const tElem = findFirstDescendant(rElem, "t");
+                if (tElem && tElem.textContent) {
+                  lineText += tElem.textContent;
+                }
+              }
+            } else {
+              // Alguns slides têm <a:t> direto no parágrafo
+              const tElem = findFirstDescendant(pElem, "t");
+              if (tElem && tElem.textContent) lineText = tElem.textContent;
+            }
+
+            lineText = cleanText(lineText);
+            if (lineText) {
+              shapeLines.push(lineText);
+              paragraphs.push({
+                text: lineText,
+                align,
+                fontSize: pFontSize,
+                bold: pBold,
+                italic: pItalic,
+                color: pColor
+              });
+              if (!shapeFontSize && pFontSize) shapeFontSize = pFontSize;
+              if (pBold) shapeBold = true;
+              if (pItalic) shapeItalic = true;
+              if (pColor && !shapeColor) shapeColor = pColor;
+            }
+          }
+        }
+
+        const fullShapeText = shapeLines.join("\n").trim();
+
+        // Identifica se é placeholder de título
+        const ph = findFirstDescendant(child, "ph");
+        const phType = ph ? ph.getAttribute("type") : null;
+        const isTitlePlaceholder = phType === "title" || phType === "ctrTitle";
+
+        if (fullShapeText && !isFooterNoise(fullShapeText)) {
+          extractedShapesForTitle.push({ isTitlePlaceholder, text: fullShapeText });
+        }
+
+        // Se tem área visual ou texto, adiciona aos elementos
+        if (w > 0 && h > 0 && (fullShapeText || bgColor || borderColor)) {
+          elements.push({
+            id: `elem-${sIdx}-${c}`,
+            type: fullShapeText ? "text" : "shape",
+            x,
+            y,
+            w,
+            h,
+            text: fullShapeText,
+            paragraphs: paragraphs.length > 0 ? paragraphs : undefined,
+            fontSize: shapeFontSize,
+            align: shapeAlign,
+            color: shapeColor,
+            bold: shapeBold,
+            italic: shapeItalic,
+            bgColor,
+            borderColor,
+            borderRadius
+          });
         }
       }
 
-      const fullShapeText = shapeLines.join("\n").trim();
-      if (fullShapeText) {
-        extractedShapes.push({ isTitlePlaceholder, text: fullShapeText });
+      // 2. IMAGENS (<p:pic>)
+      else if (tag === "pic") {
+        const xfrm = findFirstDescendant(child, "xfrm");
+        const off = xfrm ? findFirstDescendant(xfrm, "off") : null;
+        const ext = xfrm ? findFirstDescendant(xfrm, "ext") : null;
+
+        let x = 0, y = 0, w = 0, h = 0;
+        if (off && ext) {
+          const offX = parseInt(off.getAttribute("x") || "0", 10);
+          const offY = parseInt(off.getAttribute("y") || "0", 10);
+          const extW = parseInt(ext.getAttribute("cx") || "0", 10);
+          const extH = parseInt(ext.getAttribute("cy") || "0", 10);
+          x = Math.max(0, Math.min(100, (offX / slideWidthEmu) * 100));
+          y = Math.max(0, Math.min(100, (offY / slideHeightEmu) * 100));
+          w = Math.max(0, Math.min(100, (extW / slideWidthEmu) * 100));
+          h = Math.max(0, Math.min(100, (extH / slideHeightEmu) * 100));
+        }
+
+        const blip = findFirstDescendant(child, "blip");
+        const embedId = blip?.getAttribute("r:embed") || blip?.getAttribute("embed") || "";
+        const imageUrl = embedId ? mediaMap[embedId] : undefined;
+
+        if (imageUrl && w > 0 && h > 0) {
+          if (!primaryImageUrl) primaryImageUrl = imageUrl;
+          elements.push({
+            id: `pic-${sIdx}-${c}`,
+            type: "image",
+            x,
+            y,
+            w,
+            h,
+            imageUrl
+          });
+        }
       }
     }
 
-    // D. Inteligência de Título e Conteúdo
+    // D. Inteligência de Título e Conteúdo para Altaris Search & AI
     let slideTitle = "";
     const bodyParagraphs: string[] = [];
 
     // 1. Títulos canônicos conhecidos de EBD
-    const canonicalPattern = /^(TEXTO\s+ÁUREO|VERDADE\s+PRÁTICA|OBJETIVOS(\s+DA\s+LIÇÃO)?|LEITURA\s+BÍBLICA(\s+EM\s+CLASSE)?|INTRODUÇÃO|CONCLUSÃO|LIÇÃO\s+\d+|[IVXLCDM]+\s*[-–—]\s*[^.]+)$/i;
-    for (const sh of extractedShapes) {
+    const canonicalPattern =
+      /^(TEXTO\s+ÁUREO|VERDADE\s+PRÁTICA|OBJETIVOS(\s+DA\s+LIÇÃO)?|LEITURA\s+BÍBLICA(\s+EM\s+CLASSE)?|INTRODUÇÃO|CONCLUSÃO|LIÇÃO\s+\d+|[IVXLCDM]+\s*[-–—]\s*[^.]+)$/i;
+
+    for (const sh of extractedShapesForTitle) {
       const st = sh.text.trim();
       if (canonicalPattern.test(st)) {
         if (!slideTitle || st.length < slideTitle.length) {
@@ -166,7 +384,7 @@ export async function parsePptxNative(
 
     // 2. Se não achou canônico, verifica placeholder de título
     if (!slideTitle) {
-      for (const sh of extractedShapes) {
+      for (const sh of extractedShapesForTitle) {
         if (sh.isTitlePlaceholder && sh.text.trim().length <= 60) {
           slideTitle = sh.text.trim();
           break;
@@ -175,14 +393,16 @@ export async function parsePptxNative(
     }
 
     // 3. Separa formas de texto que não são o título
-    for (const sh of extractedShapes) {
+    for (const sh of extractedShapesForTitle) {
       if (sh.text.trim() === slideTitle) continue;
       bodyParagraphs.push(sh.text.trim());
     }
 
     // 4. Se ainda sem título e temos formas curtas (< 45 chars)
     if (!slideTitle && bodyParagraphs.length > 0) {
-      const shortIdx = bodyParagraphs.findIndex(b => b.length <= 45 && !b.includes("\n") && !b.endsWith("."));
+      const shortIdx = bodyParagraphs.findIndex(
+        (b) => b.length <= 45 && !b.includes("\n") && !b.endsWith(".")
+      );
       if (shortIdx !== -1) {
         slideTitle = bodyParagraphs[shortIdx];
         bodyParagraphs.splice(shortIdx, 1);
@@ -195,40 +415,31 @@ export async function parsePptxNative(
 
     const fullBodyText = bodyParagraphs.join("\n\n").trim();
 
-    // Detecção bíblica simples (ex: Jr 2.13, Sl 78.37, João 3:16, Dt 4.1)
+    // Detecção bíblica
     const combined = `${slideTitle} ${fullBodyText}`;
-    const isBibleRef = /\b([1-3]?\s?[A-Za-zçãéíóú]{2,12})\s+\d+[:.]\d+/i.test(combined) ||
-                       /\b(Jr|Sl|Mt|Mc|Lc|Jo|Rm|Ef|Fp|Cl|Hb|Ap|Deuteronômio|Salmos?|Mateus|João)\b/i.test(combined);
+    const isBibleRef =
+      /\b([1-3]?\s?[A-Za-zçãéíóú]{2,12})\s+\d+[:.]\d+/i.test(combined) ||
+      /\b(Jr|Sl|Mt|Mc|Lc|Jo|Rm|Ef|Fp|Cl|Hb|Ap|Deuteronômio|Salmos?|Mateus|João)\b/i.test(combined);
 
-    // Se o slide não tem NENHUM texto (slide puramente visual ou gráfico)
-    const isPureVisual = !fullBodyText && !slideTitle.replace(/^Slide \d+$/, "").trim();
+    const layout: SlideLayout = {
+      bgImage: slideBgImage,
+      bgColor: slideBgColor,
+      elements
+    };
 
-    if (isPureVisual && primaryImageUrl) {
-      slides.push({
-        id: `pptx-native-${Date.now()}-${entry.index}`,
-        title: `Slide ${entry.index}`,
-        header: baseTitle,
-        text: "",
-        category: "media",
-        mediaUrl: primaryImageUrl,
-        mediaType: "image",
-        background: { type: "image", value: primaryImageUrl }
-      });
-    } else {
-      // Slide de conteúdo nativo Altaris com texto ajustável e tipografia profissional
-      slides.push({
-        id: `pptx-native-${Date.now()}-${entry.index}`,
-        title: slideTitle,
-        header: isBibleRef ? slideTitle : baseTitle,
-        text: fullBodyText,
-        category: isBibleRef ? "bible" : "verse",
-        mediaUrl: primaryImageUrl,
-        mediaType: primaryImageUrl ? "image" : undefined,
-        background: primaryImageUrl
-          ? { type: "image", value: primaryImageUrl }
-          : { type: "gradient", value: "nebula" }
-      });
-    }
+    slides.push({
+      id: `pptx-native-${Date.now()}-${entry.index}`,
+      title: slideTitle,
+      header: isBibleRef ? slideTitle : baseTitle,
+      text: fullBodyText || slideTitle,
+      category: isBibleRef ? "bible" : elements.some((e) => e.type === "image") && !fullBodyText ? "media" : "verse",
+      mediaUrl: primaryImageUrl,
+      mediaType: primaryImageUrl ? "image" : undefined,
+      layout,
+      background: primaryImageUrl
+        ? { type: "image", value: primaryImageUrl }
+        : { type: "gradient", value: "nebula" }
+    });
   }
 
   return slides;
@@ -249,7 +460,14 @@ export async function checkOllamaStatus(
     if (!res.ok) return { available: false, models: [] };
     const data = await res.json();
     const models: string[] = (data.models || []).map((m: any) => m.name || m.model || "");
-    const recommended = models.find(m => m.includes("llama3.2") || m.includes("llama3") || m.includes("phi3") || m.includes("gemma2")) || models[0];
+    const recommended =
+      models.find(
+        (m) =>
+          m.includes("llama3.2") ||
+          m.includes("llama3") ||
+          m.includes("phi3") ||
+          m.includes("gemma2")
+      ) || models[0];
 
     return {
       available: true,

@@ -267,16 +267,16 @@ export async function processImportFiles(
             }
           }
 
-          const isFullGraphic = slides.some((s) => s.mediaType === "image");
-          const toastMsg = isFullGraphic
-            ? `${slides.length} slides visuais em alta resolução prontos para o telão!`
-            : `${slides.length} slides carregados em modo texto. Dica: Para projetar com as imagens, formas e cores idênticas ao PowerPoint sem o LibreOffice, salve seus slides diretamente como PDF (.pdf) e importe no Altaris com qualidade 100% fiel!`;
+          const hasNativeLayout = slides.some((s) => s.layout && s.layout.elements && s.layout.elements.length > 0);
+          const toastMsg = hasNativeLayout
+            ? `${slides.length} slides renderizados com layout nativo de alta resolução!`
+            : `${slides.length} slides prontos para a projeção!`;
 
           window.dispatchEvent(new CustomEvent("altaris:toast", {
             detail: {
-              title: isFullGraphic ? "✅ Apresentação Pronta para Projeção!" : "ℹ️ Apresentação em Modo Texto",
+              title: "✅ Apresentação Pronta para Projeção!",
               message: toastMsg,
-              duration: 8000
+              duration: 5000
             }
           }));
 

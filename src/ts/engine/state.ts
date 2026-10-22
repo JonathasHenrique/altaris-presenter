@@ -3,6 +3,43 @@
 // Fallback: BroadcastChannel (somente janelas do mesmo navegador, p.ex. dev no Chrome).
 import { getServerInfo } from "./server";
 
+export interface SlideElementParagraph {
+  text: string;
+  align?: "left" | "center" | "right";
+  fontSize?: number;
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
+}
+
+export interface SlideElement {
+  id: string;
+  type: "text" | "image" | "shape";
+  x: number; // 0 a 100%
+  y: number; // 0 a 100%
+  w: number; // 0 a 100%
+  h: number; // 0 a 100%
+  imageUrl?: string;
+  shapeType?: string;
+  bgColor?: string;
+  borderColor?: string;
+  borderRadius?: number;
+  text?: string;
+  paragraphs?: SlideElementParagraph[];
+  fontSize?: number;
+  fontFamily?: string;
+  color?: string;
+  align?: "left" | "center" | "right";
+  bold?: boolean;
+  italic?: boolean;
+}
+
+export interface SlideLayout {
+  bgImage?: string;
+  bgColor?: string;
+  elements: SlideElement[];
+}
+
 export interface Slide {
   id: string;
   title: string;
@@ -18,6 +55,7 @@ export interface Slide {
     type: "video" | "gradient" | "color" | "shader" | "image";
     value: string;
   };
+  layout?: SlideLayout;
 }
 
 export interface PlaylistItem {

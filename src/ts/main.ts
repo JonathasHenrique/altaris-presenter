@@ -519,7 +519,39 @@ function renderSlideMatrix(item: PlaylistItem) {
         : "slide-badge-pill";
 
     let previewBody = `<div class="slide-text-preview">${slide.text.replace(/\n/g, "<br>")}</div>`;
-    if (slide.mediaUrl && !slide.text) {
+    if (slide.layout && slide.layout.elements && slide.layout.elements.length > 0) {
+      const bgStyle = slide.layout.bgImage
+        ? `background-image: url(${slide.layout.bgImage}); background-size: cover; background-position: center;`
+        : slide.layout.bgColor
+        ? `background-color: ${slide.layout.bgColor};`
+        : `background: #0d1117;`;
+
+      const innerElementsHtml = slide.layout.elements
+        .map((el) => {
+          let elInner = "";
+          if (el.type === "image" && el.imageUrl) {
+            elInner = `<img src="${el.imageUrl}" style="width: 100%; height: 100%; object-fit: contain; display: block;" />`;
+          } else if (el.text) {
+            const align = el.align || "center";
+            const color = el.color || "#ffffff";
+            const isBold = el.bold ? "font-weight: 700;" : "";
+            elInner = `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: ${
+              align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start"
+            }; text-align: ${align}; font-size: 7.5px; line-height: 1.15; color: ${color}; ${isBold} overflow: hidden; padding: 2px;">${el.text.slice(0, 90)}${el.text.length > 90 ? "..." : ""}</div>`;
+          }
+          const shapeBg = el.bgColor ? `background: ${el.bgColor};` : "";
+          const shapeBorder = el.borderColor ? `border: 1px solid ${el.borderColor};` : "";
+          const shapeRadius = el.borderRadius ? `border-radius: 4px;` : "";
+          return `<div style="position: absolute; left: ${el.x}%; top: ${el.y}%; width: ${el.w}%; height: ${el.h}%; ${shapeBg} ${shapeBorder} ${shapeRadius} pointer-events: none; overflow: hidden;">${elInner}</div>`;
+        })
+        .join("");
+
+      previewBody = `
+        <div style="aspect-ratio: 16 / 9; width: 100%; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.12); ${bgStyle}">
+          ${innerElementsHtml}
+        </div>
+      `;
+    } else if (slide.mediaUrl && !slide.text) {
       if (slide.mediaType === "video") {
         previewBody = `
           <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
@@ -3899,8 +3931,18 @@ async function handleLocalAiOptimization() {
     hideLoadingHUD();
     if (res && res.text) {
       slide.text = res.text;
+      if (slide.layout && slide.layout.elements) {
+        const textElem = slide.layout.elements.find((e) => e.type === "text" || (e.text && e.text.trim().length > 0));
+        if (textElem) {
+          textElem.text = res.text;
+        }
+      }
       renderSlideMatrix(item);
-      stageSlide(targetIdx);
+      if (!isStaged) {
+        fireSlide(targetIdx);
+      } else {
+        stageSlide(targetIdx);
+      }
       showOfflineToast("✨ Slide Otimizado!", `Texto diagramado e resumido com sucesso via ${model}.`);
     } else {
       showOfflineToast("Aviso IA Local", "O modelo não retornou novo texto para este slide.");

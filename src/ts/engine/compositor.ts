@@ -1,7 +1,7 @@
 // Altaris Presenter Compositor
 // Desenha sempre em um espaço virtual 1920x1080 e escala para o canvas real,
 // com quebra de linha e ajuste automático de fonte (auto-fit).
-import { Slide } from "./state";
+import { Slide, SlideLayout } from "./state";
 
 export interface RenderOptions {
   layout: "full" | "lowerThird";
@@ -128,6 +128,7 @@ export class SlideCompositor {
   private slideMediaVideo: HTMLVideoElement | null = null;
   private lastSlideMediaUrl: string | undefined = undefined;
   private fitCache = new Map<string, FitResult>();
+  private layoutImageCache = new Map<string, HTMLImageElement>();
 
   constructor(canvas: HTMLCanvasElement, options: RenderOptions) {
     this.canvas = canvas;
@@ -343,6 +344,7 @@ export class SlideCompositor {
   destroy() {
     if (this.animFrameId !== null) cancelAnimationFrame(this.animFrameId);
     if (this.clockIntervalId !== null) window.clearInterval(this.clockIntervalId);
+    this.layoutImageCache.clear();
   }
 
   // ---------- Texto: quebra de linha e auto-fit ----------
@@ -401,22 +403,26 @@ export class SlideCompositor {
 
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
-    if (this.options.showBackground && !this.options.alphaChannel) this.drawBackground();
+    if (this.currentSlide?.layout && this.currentSlide.layout.elements && this.currentSlide.layout.elements.length > 0 && !this.options.isClearText) {
+      this.drawNativeSlideLayout(this.currentSlide.layout);
+    } else {
+      if (this.options.showBackground && !this.options.alphaChannel) this.drawBackground();
 
-    // Se o slide atual for uma Mídia (Imagem, Slide PDF, ou Vídeo), desenha em tela cheia
-    if (this.currentSlide?.mediaUrl && !this.options.alphaChannel) {
-      this.drawSlideMedia();
-    }
+      // Se o slide atual for uma Mídia (Imagem, Slide PDF, ou Vídeo), desenha em tela cheia
+      if (this.currentSlide?.mediaUrl && !this.options.alphaChannel) {
+        this.drawSlideMedia();
+      }
 
-    if (!this.options.isClearText && this.currentSlide && this.currentSlide.text.trim()) {
-      // Slides de apresentação visual (imagens completas) não têm texto de hino projetado por cima
-      if (this.currentSlide.category !== "media" || !this.currentSlide.mediaUrl) {
-        const displaySlide: Slide = this.options.uppercaseLyrics
-          ? { ...this.currentSlide, text: this.currentSlide.text.toUpperCase() }
-          : this.currentSlide;
+      if (!this.options.isClearText && this.currentSlide && this.currentSlide.text.trim()) {
+        // Slides de apresentação visual (imagens completas) não têm texto de hino projetado por cima
+        if (this.currentSlide.category !== "media" || !this.currentSlide.mediaUrl) {
+          const displaySlide: Slide = this.options.uppercaseLyrics
+            ? { ...this.currentSlide, text: this.currentSlide.text.toUpperCase() }
+            : this.currentSlide;
 
-        if (this.options.layout === "lowerThird") this.drawLowerThird(displaySlide);
-        else this.drawFullSlide(displaySlide);
+          if (this.options.layout === "lowerThird") this.drawLowerThird(displaySlide);
+          else this.drawFullSlide(displaySlide);
+        }
       }
     }
 
@@ -424,6 +430,144 @@ export class SlideCompositor {
 
     if (this.options.clockPosition && this.options.clockPosition !== "none") {
       this.drawClock(this.options.clockPosition);
+    }
+  }
+
+  private drawNativeSlideLayout(layout: SlideLayout) {
+    const ctx = this.ctx;
+
+    // 1. Fundo do Slide
+    if (layout.bgImage && !this.options.alphaChannel) {
+      let bgImg = this.layoutImageCache.get(layout.bgImage);
+      if (!bgImg) {
+        bgImg = new Image();
+        bgImg.onload = () => this.draw();
+        bgImg.src = layout.bgImage;
+        this.layoutImageCache.set(layout.bgImage, bgImg);
+      }
+      if (bgImg.complete && bgImg.naturalWidth > 0) {
+        this.drawCoverSource(bgImg, bgImg.naturalWidth, bgImg.naturalHeight);
+      }
+    } else if (layout.bgColor && !this.options.alphaChannel) {
+      ctx.fillStyle = layout.bgColor;
+      ctx.fillRect(0, 0, VW, VH);
+    } else if (this.options.showBackground && !this.options.alphaChannel) {
+      this.drawBackground();
+    }
+
+    const activeFont = this.options.fontFamily || FONT;
+    const fontStyle = this.options.fontStyle || "bold";
+    const defaultWeight = fontStyle === "bold" || fontStyle === "boldItalic" ? 700 : 500;
+    const fontPrefix = fontStyle === "italic" || fontStyle === "boldItalic" ? "italic " : "";
+
+    // 2. Elementos em ordem Z
+    for (const el of layout.elements) {
+      const ex = (el.x / 100) * VW;
+      const ey = (el.y / 100) * VH;
+      const ew = (el.w / 100) * VW;
+      const eh = (el.h / 100) * VH;
+
+      // Forma / Container (Background ou Borda)
+      if (el.bgColor || el.borderColor) {
+        ctx.save();
+        if (el.bgColor) {
+          ctx.fillStyle = el.bgColor;
+          if (el.borderRadius && el.borderRadius > 0) {
+            ctx.beginPath();
+            ctx.roundRect(ex, ey, ew, eh, el.borderRadius);
+            ctx.fill();
+          } else {
+            ctx.fillRect(ex, ey, ew, eh);
+          }
+        }
+        if (el.borderColor) {
+          ctx.strokeStyle = el.borderColor;
+          ctx.lineWidth = 2;
+          if (el.borderRadius && el.borderRadius > 0) {
+            ctx.beginPath();
+            ctx.roundRect(ex, ey, ew, eh, el.borderRadius);
+            ctx.stroke();
+          } else {
+            ctx.strokeRect(ex, ey, ew, eh);
+          }
+        }
+        ctx.restore();
+      }
+
+      // Imagem
+      if (el.type === "image" && el.imageUrl) {
+        let img = this.layoutImageCache.get(el.imageUrl);
+        if (!img) {
+          img = new Image();
+          img.onload = () => this.draw();
+          img.src = el.imageUrl;
+          this.layoutImageCache.set(el.imageUrl, img);
+        }
+        if (img.complete && img.naturalWidth > 0) {
+          const scale = Math.min(ew / img.naturalWidth, eh / img.naturalHeight);
+          const dw = img.naturalWidth * scale;
+          const dh = img.naturalHeight * scale;
+          const dx = ex + (ew - dw) / 2;
+          const dy = ey + (eh - dh) / 2;
+          ctx.drawImage(img, dx, dy, dw, dh);
+        }
+      }
+
+      // Texto com Auto-fit dentro do bounding box
+      if (el.text && el.text.trim()) {
+        ctx.save();
+        const align = el.align || "center";
+        ctx.textAlign = align;
+        ctx.textBaseline = "middle";
+
+        const padX = Math.min(24, ew * 0.05);
+        const padY = Math.min(20, eh * 0.05);
+        const maxTextW = Math.max(20, ew - padX * 2);
+        const maxTextH = Math.max(20, eh - padY * 2);
+
+        // Cor do texto
+        const txtColor = el.color || this.options.textColor || "#ffffff";
+        ctx.fillStyle = txtColor;
+
+        if (this.options.textShadowStyle === "soft") {
+          ctx.shadowColor = "rgba(0,0,0,0.85)";
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 3;
+        }
+
+        const basePt = el.fontSize ? Math.round((el.fontSize / 100) * 1.33) : 38;
+        const scaleMult =
+          this.options.fontSizeScale === "max" ? 1.2 : this.options.fontSizeScale === "normal" ? 0.9 : 1.0;
+        const targetMaxSize = Math.round(Math.max(26, Math.min(108, basePt * scaleMult)));
+        const targetMinSize = 16;
+        const weight = el.bold ? 700 : defaultWeight;
+        const isItalic = el.italic ? "italic " : fontPrefix;
+
+        let chosenSize = targetMinSize;
+        let finalLines: string[] = [];
+
+        for (let s = targetMaxSize; s >= targetMinSize; s -= 2) {
+          ctx.font = `${isItalic}${weight} ${s}px ${activeFont}`;
+          const lines = this.wrap(el.text, maxTextW);
+          finalLines = lines;
+          chosenSize = s;
+          if (lines.length * s * 1.25 <= maxTextH) break;
+        }
+
+        ctx.font = `${isItalic}${weight} ${chosenSize}px ${activeFont}`;
+        const lineHeight = chosenSize * 1.25;
+        const totalBlockH = finalLines.length * lineHeight;
+        const startY = ey + (eh - totalBlockH) / 2 + lineHeight / 2;
+        const textAnchorX =
+          align === "center" ? ex + ew / 2 : align === "right" ? ex + ew - padX : ex + padX;
+
+        for (let i = 0; i < finalLines.length; i++) {
+          ctx.fillText(finalLines[i], textAnchorX, startY + i * lineHeight);
+        }
+
+        ctx.restore();
+      }
     }
   }
 
