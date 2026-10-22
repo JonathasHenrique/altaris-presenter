@@ -14,7 +14,7 @@ export interface RenderOptions {
   churchLogo?: string | null;
   lowSpecMode?: boolean;
   clockPosition?: "none" | "topRight" | "bottomRight" | "bottomLeft";
-  backgroundTheme?: "nebula" | "worship-gold" | "royal-blue" | "emerald-calm" | "crimson-cross" | "solid-dark" | "custom-image" | "custom-video";
+  backgroundTheme?: "nebula" | "worship-gold" | "royal-blue" | "emerald-calm" | "crimson-cross" | "solid-dark" | "motion-loop-1" | "motion-loop-2" | "motion-loop-3" | "custom-image" | "custom-video";
   customBackgroundImage?: string | null;
   customBackgroundVideo?: string | null;
   backgroundDimmer?: number;
@@ -41,6 +41,66 @@ export interface RenderOptions {
   obsShowHeader?: boolean;
 }
 
+
+function resolveVideoSrc(theme?: string, customVid?: string | null): string | null {
+  if (theme === "motion-loop-1") return "/data/videos/bg1.mp4";
+  if (theme === "motion-loop-2") return "/data/videos/bg2.mp4";
+  if (theme === "motion-loop-3") return "/data/videos/bg3.mp4";
+  if (theme === "custom-video") return customVid || "/data/videos/bg1.mp4";
+  return null;
+}
+function isVideoTheme(theme?: string): boolean {
+  return ["custom-video", "motion-loop-1", "motion-loop-2", "motion-loop-3"].includes(theme || "");
+}
+
+
+function configureAutoplayVideo(vid: HTMLVideoElement, src: string) {
+  vid.defaultMuted = true;
+  vid.muted = true;
+  vid.volume = 0;
+  vid.loop = true;
+  vid.playsInline = true;
+  vid.autoplay = true;
+  vid.controls = false;
+  vid.setAttribute("muted", "");
+  vid.setAttribute("autoplay", "");
+  vid.setAttribute("playsinline", "");
+  vid.setAttribute("webkit-playsinline", "");
+  vid.setAttribute("loop", "");
+  vid.setAttribute("controlslist", "nodownload nofullscreen noremoteplayback");
+  vid.disablePictureInPicture = true;
+
+  const tryPlay = () => {
+    if (vid.paused) {
+      const p = vid.play();
+      if (p && typeof p.catch === "function") {
+        p.catch(() => {
+          const wake = () => {
+            vid.play().catch(() => {});
+          };
+          window.addEventListener("pointerdown", wake, { once: true });
+          window.addEventListener("mousemove", wake, { once: true });
+          window.addEventListener("keydown", wake, { once: true });
+          window.addEventListener("focus", wake, { once: true });
+        });
+      }
+    }
+  };
+
+  vid.addEventListener("loadedmetadata", tryPlay);
+  vid.addEventListener("canplay", tryPlay);
+  vid.addEventListener("canplaythrough", tryPlay);
+  vid.addEventListener("pause", () => {
+    if (!vid.ended) {
+      setTimeout(tryPlay, 80);
+    }
+  });
+
+  vid.src = src;
+  vid.load();
+  tryPlay();
+}
+
 const VW = 1920;
 const VH = 1080;
 const FONT = "Inter, system-ui, sans-serif";
@@ -54,6 +114,8 @@ export class SlideCompositor {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private animFrameId: number | null = null;
+  private clockIntervalId: number | null = null;
+  private lastAnimatedFrame = 0;
   private currentSlide: Slide | null = null;
   private options: RenderOptions;
   private time = 0;
@@ -79,7 +141,7 @@ export class SlideCompositor {
     }
     this.loadLogo(this.options.churchLogo);
     this.loadBgImage(this.options.customBackgroundImage);
-    const initialVid = this.options.customBackgroundVideo || (this.options.backgroundTheme === "custom-video" ? "/data/videos/bg3.mp4" : null);
+    const initialVid = resolveVideoSrc(this.options.backgroundTheme, this.options.customBackgroundVideo);
     this.loadBgVideo(initialVid);
     this.startLoop();
   }
@@ -91,7 +153,7 @@ export class SlideCompositor {
       this.loadSlideMedia(slide?.mediaUrl, slide?.mediaType);
     }
     this.syncVideoVisibility();
-    if (this.options.lowSpecMode) this.draw();
+    this.draw();
   }
 
   setOptions(options: Partial<RenderOptions>) {
@@ -103,19 +165,21 @@ export class SlideCompositor {
     if (this.options.churchLogo !== prevLogo) this.loadLogo(this.options.churchLogo);
     if (this.options.customBackgroundImage !== prevBgImg) this.loadBgImage(this.options.customBackgroundImage);
 
-    const effectiveVid = this.options.customBackgroundVideo || (this.options.backgroundTheme === "custom-video" ? "/data/videos/bg3.mp4" : null);
-    const prevEffectiveVid = prevBgVid || (prevTheme === "custom-video" ? "/data/videos/bg3.mp4" : null);
+    const effectiveVid = resolveVideoSrc(this.options.backgroundTheme, this.options.customBackgroundVideo);
+    const prevEffectiveVid = resolveVideoSrc(prevTheme, prevBgVid);
     if (effectiveVid !== prevEffectiveVid) {
       this.loadBgVideo(effectiveVid);
     }
     this.syncVideoVisibility();
-    if (this.options.lowSpecMode) this.draw();
+    this.draw();
+    this.syncAnimationLoop();
+    this.syncClockTimer();
   }
 
   private syncVideoVisibility() {
     const isBlackout = !!this.options.isBlackout;
     const hasSlideVid = !isBlackout && !this.options.alphaChannel && this.currentSlide?.mediaType === "video" && !!this.slideMediaVideo;
-    const hasBgVid = !isBlackout && !this.options.alphaChannel && this.options.showBackground && this.options.backgroundTheme === "custom-video" && !hasSlideVid && !!this.bgVideo;
+    const hasBgVid = !isBlackout && !this.options.alphaChannel && this.options.showBackground && isVideoTheme(this.options.backgroundTheme) && !hasSlideVid && !!this.bgVideo;
 
     if (this.bgVideo) {
       this.bgVideo.style.opacity = hasBgVid ? "1" : "0";
@@ -135,7 +199,7 @@ export class SlideCompositor {
     const img = new Image();
     img.onload = () => {
       this.logoImg = img;
-      if (this.options.lowSpecMode) this.draw();
+      this.draw();
     };
     img.src = src;
   }
@@ -148,29 +212,36 @@ export class SlideCompositor {
     const img = new Image();
     img.onload = () => {
       this.bgImg = img;
-      if (this.options.lowSpecMode) this.draw();
+      this.draw();
     };
     img.src = src;
   }
 
   private loadBgVideo(src?: string | null) {
+    if (!src || this.options.alphaChannel) {
+      if (this.bgVideo) {
+        this.bgVideo.pause();
+        this.bgVideo.removeAttribute("src");
+        this.bgVideo.remove();
+        this.bgVideo = null;
+      }
+      return;
+    }
+    if (this.bgVideo && this.bgVideo.getAttribute("data-src") === src) {
+      this.syncVideoVisibility();
+      return;
+    }
     if (this.bgVideo) {
       this.bgVideo.pause();
       this.bgVideo.removeAttribute("src");
       this.bgVideo.remove();
       this.bgVideo = null;
     }
-    if (!src || this.options.alphaChannel) return;
     const vid = document.createElement("video");
-    vid.muted = true;
-    vid.loop = true;
-    vid.playsInline = true;
-    vid.autoplay = true;
+    vid.setAttribute("data-src", src);
     vid.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:0;opacity:0;transition:opacity 0.2s ease;";
     (this.canvas.parentElement || document.body).appendChild(vid);
-    vid.src = src;
-    vid.load();
-    vid.play().catch(() => {});
+    configureAutoplayVideo(vid, src);
     this.bgVideo = vid;
     this.syncVideoVisibility();
   }
@@ -186,22 +257,16 @@ export class SlideCompositor {
     if (!src || this.options.alphaChannel) return;
     if (type === "video") {
       const vid = document.createElement("video");
-      vid.muted = true;
-      vid.loop = true;
-      vid.playsInline = true;
-      vid.autoplay = true;
       vid.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;pointer-events:none;z-index:0;opacity:0;";
       (this.canvas.parentElement || document.body).appendChild(vid);
-      vid.src = src;
-      vid.load();
-      vid.play().catch(() => {});
+      configureAutoplayVideo(vid, src);
       this.slideMediaVideo = vid;
       this.syncVideoVisibility();
     } else {
       const img = new Image();
       img.onload = () => {
         this.slideMediaImg = img;
-        if (this.options.lowSpecMode) this.draw();
+        this.draw();
       };
       img.src = src;
     }
@@ -225,19 +290,57 @@ export class SlideCompositor {
   }
 
   private startLoop() {
-    const render = () => {
-      // Redesenha continuamente se modo normal ou se houver vídeo em execução
-      if (!this.options.lowSpecMode || this.bgVideo || this.slideMediaVideo) {
-        this.time += 0.015;
-        this.draw();
-      }
-      this.animFrameId = requestAnimationFrame(render);
-    };
-    this.animFrameId = requestAnimationFrame(render);
+    this.draw();
+    this.syncAnimationLoop();
+    this.syncClockTimer();
+  }
+
+  private hasAnimatedBackground(): boolean {
+    const theme = this.options.backgroundTheme || "nebula";
+    return !this.options.lowSpecMode && !!this.options.showBackground && !this.options.alphaChannel &&
+      ["nebula", "worship-gold", "royal-blue", "emerald-calm", "crimson-cross"].includes(theme);
+  }
+
+  private syncAnimationLoop() {
+    if (!this.hasAnimatedBackground()) {
+      if (this.animFrameId !== null) cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+      this.lastAnimatedFrame = 0;
+      return;
+    }
+    if (this.animFrameId === null) {
+      this.lastAnimatedFrame = 0;
+      this.animFrameId = requestAnimationFrame(this.renderAnimatedFrame);
+    }
+  }
+
+  private renderAnimatedFrame = (timestamp: number) => {
+    if (!this.hasAnimatedBackground()) {
+      this.animFrameId = null;
+      return;
+    }
+    if (timestamp - this.lastAnimatedFrame >= 1000 / 15) {
+      const elapsed = this.lastAnimatedFrame ? timestamp - this.lastAnimatedFrame : 1000 / 15;
+      this.time += 0.015 * (elapsed / (1000 / 60));
+      this.draw();
+      this.lastAnimatedFrame = timestamp;
+    }
+    this.animFrameId = requestAnimationFrame(this.renderAnimatedFrame);
+  };
+
+  private syncClockTimer() {
+    const hasClock = !!this.options.clockPosition && this.options.clockPosition !== "none";
+    if (hasClock && this.clockIntervalId === null) {
+      this.clockIntervalId = window.setInterval(() => this.draw(), 1000);
+    } else if (!hasClock && this.clockIntervalId !== null) {
+      window.clearInterval(this.clockIntervalId);
+      this.clockIntervalId = null;
+    }
   }
 
   destroy() {
-    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+    if (this.animFrameId !== null) cancelAnimationFrame(this.animFrameId);
+    if (this.clockIntervalId !== null) window.clearInterval(this.clockIntervalId);
   }
 
   // ---------- Texto: quebra de linha e auto-fit ----------
@@ -358,7 +461,7 @@ export class SlideCompositor {
     const theme = this.options.backgroundTheme || "nebula";
     const dimmer = this.options.backgroundDimmer ?? 0.45;
 
-    if (theme === "custom-video" && this.bgVideo) {
+    if (isVideoTheme(theme) && this.bgVideo) {
       ctx.clearRect(0, 0, VW, VH);
       if (dimmer > 0) {
         ctx.fillStyle = `rgba(0, 0, 0, ${dimmer})`;

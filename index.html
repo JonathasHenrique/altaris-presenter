@@ -53,6 +53,7 @@
           <button class="menu-item" id="mi-full-backup-import"><span class="item-icon">♻️</span> Restaurar Backup Completo...</button>
           <input type="file" id="input-full-backup-file" accept=".json,.altaris-backup.json" style="display: none;">
           <hr class="menu-divider">
+          <button class="menu-item" id="mi-import-media"><span class="item-icon">📽️</span> Importar apresentação / mídia...</button>
           <button class="menu-item" id="mi-import-file"><span class="item-icon">📂</span> Importar Arquivo (ProPresenter, Holyrics, OpenLP)... <span class="shortcut">⌘O</span></button>
         </div>
       </div>
@@ -66,6 +67,8 @@
           <button class="menu-item menu-clock-opt" data-clock="topRight"><span class="item-icon clock-check" data-for="topRight"> </span> Canto Superior Direito</button>
           <button class="menu-item menu-clock-opt" data-clock="bottomRight"><span class="item-icon clock-check" data-for="bottomRight"> </span> Canto Inferior Direito</button>
           <button class="menu-item menu-clock-opt" data-clock="bottomLeft"><span class="item-icon clock-check" data-for="bottomLeft"> </span> Canto Inferior Esquerdo</button>
+          <hr class="menu-divider">
+          <button class="menu-item" id="mi-launch-impress"><span class="item-icon">▶️</span> Apresentar no LibreOffice Impress... <span class="shortcut">Shift+F5</span></button>
           <hr class="menu-divider">
           <div style="padding: 4px 12px; font-size: 0.7rem; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em;">🎨 Tema de Fundo (Telão)</div>
           <button class="menu-item menu-bg-opt" data-bg="nebula"><span class="item-icon bg-check" data-for="nebula">✓</span> Nebulosa Índigo (Padrão)</button>
@@ -257,7 +260,7 @@
             <button id="pill-quick-new" class="quick-pill" title="Criar Nova Letra"><span class="pill-icon">✍️</span> Letra</button>
             <button id="pill-quick-media" class="quick-pill" title="Adicionar Imagens, Vídeos, PDFs ou Slides PowerPoint/ODP (requer LibreOffice)"><span class="pill-icon">🖼️</span> Mídia</button>
           </div>
-          <input type="file" id="input-quick-media-files" accept="image/*,video/*,application/pdf,.pdf,.pptx,.ppt,.odp,.pps,.ppsx,.key,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint" multiple style="display: none;">
+          <input type="file" id="input-quick-media-files" accept="image/*,video/*,application/pdf,.pdf,.pptx,.ppt,.pptm,.odp,.fodp,.pps,.ppsx,.ppsm,.pot,.potx,.potm,.key,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint" multiple style="display: none;">
 
           <!-- Playlist Cards -->
           <div id="playlist-container" style="display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto;"></div>
@@ -284,6 +287,12 @@
           </div>
 
           <div style="display: flex; align-items: center; gap: 6px;">
+            <button id="btn-audit-report" class="btn" style="display: none; padding: 4px 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; font-size: 0.76rem; font-weight: 600; border-radius: 6px; cursor: pointer;" title="Auditoria Inteligente de Layout e Transbordo de Fontes">
+              <span id="btn-audit-report-text">🛡️ Layout OK</span>
+            </button>
+            <button id="btn-launch-impress" class="btn" style="display: none; padding: 4px 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-size: 0.76rem; font-weight: 600; border-radius: 6px; cursor: pointer;" title="Apresentar via LibreOffice Impress com animações e transições originais">
+              <span>▶ Animações (LibreOffice)</span>
+            </button>
             <button id="btn-prev-slide" class="btn" style="padding: 4px 10px;" title="Slide Anterior (Seta Esquerda)">◀</button>
             <button id="btn-next-slide" class="btn" style="padding: 4px 10px;" title="Próximo Slide (Espaço / Seta Direita)">▶</button>
           </div>
@@ -556,24 +565,32 @@
           <div class="macos-form-row">
             <div class="macos-form-label">Tema de fundo ativo:</div>
             <div class="macos-form-control">
-              <select id="pref-select-bg-theme" class="btn" style="min-width: 320px;">
-                <option value="nebula">🌌 Nebulosa Índigo Animada (Padrão)</option>
-                <option value="worship-gold">✨ Adoração Dourada (Quente)</option>
-                <option value="royal-blue">🌊 Azul Real Profundo</option>
-                <option value="emerald-calm">🌿 Esmeralda Suave</option>
-                <option value="crimson-cross">🍷 Carmesim Santa Ceia</option>
-                <option value="solid-dark">⬛ Preto Sólido (0% GPU)</option>
-                <option value="custom-image">🖼️ Imagem de Fundo Customizada</option>
-                <option value="custom-video">🎬 Vídeo Animado em Loop (Motion Background)</option>
+              <select id="pref-select-bg-theme" class="btn" style="min-width: 340px;">
+                <optgroup label="🎬 Vídeos em Loop (Motion Backgrounds)">
+                  <option value="motion-loop-1">🎬 Loop 1: Partículas HD</option>
+                  <option value="motion-loop-2">🎬 Loop 2: Violão & Adoração</option>
+                  <option value="motion-loop-3">🎬 Loop 3: Bíblia & Louvor Dourado</option>
+                  <option value="custom-video">📂 Vídeo Customizado (Fazer Upload)...</option>
+                </optgroup>
+                <optgroup label="🌌 Temas Animados & Gradientes">
+                  <option value="nebula">🌌 Nebulosa Índigo Animada (Padrão)</option>
+                  <option value="worship-gold">✨ Adoração Dourada (Quente)</option>
+                  <option value="royal-blue">🌊 Azul Real Profundo</option>
+                  <option value="emerald-calm">🌿 Esmeralda Suave</option>
+                  <option value="crimson-cross">🍷 Carmesim Santa Ceia</option>
+                  <option value="solid-dark">⬛ Preto Sólido (0% GPU)</option>
+                </optgroup>
+                <optgroup label="🖼️ Imagens Estáticas">
+                  <option value="custom-image">🖼️ Imagem Customizada (Fazer Upload)...</option>
+                </optgroup>
               </select>
-              <div class="macos-form-hint">O fundo escolhido é renderizado em tempo real atrás das letras e versículos no telão.</div>
+              <div class="macos-form-hint">O tema de fundo é renderizado em loop contínuo e silencioso atrás das letras e versículos no telão.</div>
             </div>
           </div>
 
-          <hr class="macos-divider">
-
-          <div class="macos-form-row">
-            <div class="macos-form-label">Imagem de fundo customizada:</div>
+          <!-- Upload de Imagem Customizada (Visível apenas se Imagem Customizada selecionada) -->
+          <div class="macos-form-row" id="row-custom-image" style="display: none;">
+            <div class="macos-form-label">Upload da Imagem:</div>
             <div class="macos-form-control">
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                 <label for="input-pref-bg-image" class="btn btn-primary" style="cursor: pointer;">
@@ -582,34 +599,26 @@
                 <input type="file" id="input-pref-bg-image" accept="image/*" style="display: none;">
                 <button id="btn-pref-clear-bg-image" class="btn btn-ghost" style="color: #f87171;">Remover</button>
               </div>
-              <!-- Status Visual da Imagem Selecionada -->
               <div id="bg-image-selected-status" style="margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); font-size: 0.76rem; color: #94a3b8; display: inline-flex; align-items: center; gap: 8px;">
                 <span>⚪ Nenhuma imagem customizada selecionada</span>
               </div>
-              <div class="macos-form-hint">Ao selecionar uma foto ou arte da igreja, ela passa a ser o fundo imediato do telão.</div>
             </div>
           </div>
 
-          <div class="macos-form-row">
-            <div class="macos-form-label">Vídeo animado (Motion Loop):</div>
+          <!-- Upload de Vídeo Customizado (Visível apenas se Vídeo Customizado selecionado) -->
+          <div class="macos-form-row" id="row-custom-video" style="display: none;">
+            <div class="macos-form-label">Upload do Vídeo:</div>
             <div class="macos-form-control">
-              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px;">
-                <button class="btn btn-preset-bg-video" data-video="/data/videos/bg1.mp4" data-label="Loop 1: Partículas HD" style="font-size: 0.75rem; padding: 5px 10px;">🎬 Loop 1: Partículas HD</button>
-                <button class="btn btn-preset-bg-video" data-video="/data/videos/bg2.mp4" data-label="Loop 2: Violão & Adoração" style="font-size: 0.75rem; padding: 5px 10px;">🎬 Loop 2: Violão & Adoração</button>
-                <button class="btn btn-preset-bg-video" data-video="/data/videos/bg3.mp4" data-label="Loop 3: Bíblia & Louvor Dourado" style="font-size: 0.75rem; padding: 5px 10px;">🎬 Loop 3: Bíblia & Louvor Dourado</button>
-              </div>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                 <label for="input-pref-bg-video" class="btn btn-primary" style="cursor: pointer;">
-                  📂 Escolher Outro Vídeo do Computador (.MP4, .WEBM)...
+                  📂 Escolher Vídeo do Computador (.MP4, .WEBM)...
                 </label>
                 <input type="file" id="input-pref-bg-video" accept="video/mp4,video/webm,video/*" style="display: none;">
                 <button id="btn-pref-clear-bg-video" class="btn btn-ghost" style="color: #f87171;">Remover</button>
               </div>
-              <!-- Status Visual do Vídeo Selecionado com Miniatura -->
               <div id="bg-video-selected-status" style="margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); font-size: 0.76rem; color: #94a3b8; display: inline-flex; align-items: center; gap: 10px;">
-                <span>⚪ Nenhum vídeo em loop selecionado</span>
+                <span>⚪ Nenhum vídeo customizado selecionado</span>
               </div>
-              <div class="macos-form-hint">Reproduz vídeos animados em loop contínuo e silencioso atrás das letras.</div>
             </div>
           </div>
 
@@ -744,20 +753,20 @@
               <label for="input-media-pdf" class="btn btn-primary" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
                 <span>📄 Importar Slides (PDF / PowerPoint / Imagens)...</span>
               </label>
-              <input type="file" id="input-media-pdf" accept=".pdf,application/pdf,.pptx,.ppt,.odp,.key,image/*" multiple style="display: none;">
+              <input type="file" id="input-media-pdf" accept=".pdf,application/pdf,.pptx,.ppt,.pptm,.odp,.fodp,.pps,.ppsx,.ppsm,.pot,.potx,.potm,.key,image/*,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint" multiple style="display: none;">
               <div class="macos-form-hint">Cada página do PDF ou slide da apresentação é convertida em telas de projeção de altíssima definição (1080p/4K).</div>
 
-              <!-- Card informativo: PDF Nativo vs Apresentação Direta via LibreOffice -->
+              <!-- Card informativo: modos de apresentação -->
               <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 12px 14px; margin-top: 10px; font-size: 0.77rem; color: #cbd5e1; line-height: 1.5;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                   <b style="color: #a5b4fc; font-size: 0.8rem;">💡 Dica de Apresentações no Culto:</b>
                   <span style="background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); font-size: 0.68rem; font-weight: 700; padding: 1px 7px; border-radius: 999px;">PDF 100% Nativo</span>
                 </div>
                 <div style="margin-bottom: 6px;">
-                  • <b>PDF (Recomendado / 100% Nativo):</b> Exporte sua apresentação (PowerPoint, Canva ou Google Slides) como <b>PDF</b> antes do culto. Abre instantaneamente, com máxima nitidez e sem depender de nenhum software externo instalado.
+                  • <b>PDF (Recomendado / 100% Nativo):</b> Exporte sua apresentação como <b>PDF</b> antes do culto. Abre instantaneamente, com máxima nitidez e sem depender de software externo.
                 </div>
                 <div>
-                  • <b>Arquivos Diretos (.pptx / .odp):</b> Para abrir arquivos de PowerPoint diretamente com todas as artes e imagens preservadas, o <b>LibreOffice</b> precisa estar instalado na máquina para realizar a renderização de fundo.
+                  • <b>PowerPoint / ODP (.pptx, .ppt, .odp):</b> O Altaris converte cada página em lâminas de altíssima definição (1080p/4K) para preview e projeção direta no telão. Preserva layout, artes e imagens originais (modo estático, sem animações).
                 </div>
               </div>
             </div>
@@ -1039,48 +1048,6 @@
               </div>
             </div>
           </div>
-
-          <!-- 3. Sub-Panel: Tabela de Nomes -->
-          <div id="raffle-subpanel-names" style="display: none; flex-direction: column; gap: 10px;">
-            <div class="macos-form-row">
-              <div class="macos-form-label">Adicionar Participantes:<br><span style="font-size: 0.7rem; color: #64748b;">(Cole 1 nome por linha)</span></div>
-              <div class="macos-form-control" style="width: 100%;">
-                <textarea id="pref-raffle-names-input" placeholder="Cole aqui os nomes dos participantes (um por linha)&#10;Ex:&#10;Lucas Gabriel&#10;Mariana Costa&#10;Pr. Carlos Eduardo&#10;Beatriz Oliveira..." style="width: 100%; height: 80px; background: #0d1017; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 10px; color: #34d399; font-family: monospace; font-size: 0.78rem; outline: none; resize: vertical;"></textarea>
-                <div style="display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
-                  <button type="button" id="btn-raffle-add-names" class="btn btn-primary" style="padding: 4px 10px; font-size: 0.72rem;">➕ Importar Nomes</button>
-                  <button type="button" id="btn-raffle-load-sample" class="btn" style="padding: 4px 10px; font-size: 0.72rem;">📋 Carregar Exemplo (10 Nomes)</button>
-                  <button type="button" id="btn-raffle-clear-names" class="btn btn-ghost" style="padding: 4px 10px; font-size: 0.72rem; color: #ef4444;">🗑️ Limpar Lista</button>
-                  <button type="button" id="btn-raffle-shuffle-names" class="btn" style="padding: 4px 10px; font-size: 0.72rem;">🔀 Embaralhar</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tabela Visual de Nomes Cadastrados -->
-            <div class="macos-form-row">
-              <div class="macos-form-label">
-                Participantes:<br>
-                <span id="raffle-names-counter" style="font-size: 0.72rem; color: #38bdf8; font-weight: 700;">10 cadastrados</span>
-              </div>
-              <div class="macos-form-control" style="width: 100%;">
-                <div style="max-height: 160px; overflow-y: auto; width: 100%; border: 1px solid var(--border-subtle); border-radius: 8px; background: rgba(0,0,0,0.25);">
-                  <table class="raffle-names-table">
-                    <thead>
-                      <tr>
-                        <th style="width: 38px;">#</th>
-                        <th>Nome / Participante</th>
-                        <th style="width: 90px; text-align: center;">Status</th>
-                        <th style="width: 44px; text-align: center;">Ação</th>
-                      </tr>
-                    </thead>
-                    <tbody id="raffle-names-tbody">
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <hr class="macos-divider">
 
           <!-- 4. Área de Ação e Sorteio Ao Vivo (Stage Card) -->
           <div class="macos-form-row">
@@ -1510,5 +1477,56 @@
   <div id="offline-toast-container" style="position: fixed; top: 88px; right: 20px; z-index: 4000; display: flex; flex-direction: column; gap: 8px; pointer-events: none;"></div>
 
   <script type="module" src="/src/ts/main.ts"></script>
+  <!-- Modal de Auditoria de Layout & Tipografia (Altaris Shield) -->
+  <div id="modal-layout-audit" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 2600; align-items: center; justify-content: center; padding: 20px;">
+    <div class="glass-panel" style="background: rgba(17, 24, 39, 0.94); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 18px; width: 100%; max-width: 660px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 25px 60px rgba(0,0,0,0.85); overflow: hidden;">
+      
+      <!-- Modal Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.4rem;">🛡️</span>
+          <div>
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 2px;">Auditor de Layout & Transbordo</h3>
+            <span id="audit-subtitle" style="font-size: 0.75rem; color: #94a3b8;">Validação de caixas delimitadoras e fidelidade métrica de fontes</span>
+          </div>
+        </div>
+        <button id="btn-close-audit" class="btn" style="padding: 4px 10px; font-size: 1.1rem; line-height: 1; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; border-radius: 8px; cursor: pointer;">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div style="flex: 1; overflow-y: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;">
+        <!-- Status Banner -->
+        <div id="audit-status-banner" style="border-radius: 12px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px;"></div>
+
+        <!-- Fonts Detected Card -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 14px 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 0.82rem; font-weight: 600; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">🔤 Fontes Detectadas no Arquivo</span>
+            <button id="btn-sync-fonts-modal" class="btn" style="padding: 3px 8px; font-size: 0.72rem; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.35); color: #818cf8; border-radius: 6px; cursor: pointer;">Sincronizar Fontes</button>
+          </div>
+          <div id="audit-fonts-list" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+        </div>
+
+        <!-- Detailed Slide List -->
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size: 0.82rem; font-weight: 600; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">📋 Slides com Análise Crítica</span>
+          <div id="audit-slides-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding-right: 4px;"></div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="padding: 14px 22px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.25); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <span style="font-size: 0.75rem; color: #64748b;">Auto-Fit recalculado em tempo real com margens seguras.</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button id="btn-autofit-all" class="btn" style="padding: 7px 18px; font-size: 0.82rem; font-weight: 700; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(99,102,241,0.35);">
+            <span>✨ Auto-Ajustar Todos os Slides</span>
+          </button>
+          <button id="btn-dismiss-audit" class="btn btn-secondary" style="padding: 7px 16px; font-size: 0.82rem; border-radius: 8px; cursor: pointer;">Fechar</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </body>
 </html>

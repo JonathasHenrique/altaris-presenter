@@ -12,6 +12,8 @@ export interface Slide {
   category: "intro" | "verse" | "chorus" | "bridge" | "ending" | "bible" | "alert" | "media";
   mediaUrl?: string;
   mediaType?: "image" | "video";
+  auditStatus?: "ok" | "warning" | "overflow";
+  auditIssue?: string;
   background: {
     type: "video" | "gradient" | "color" | "shader" | "image";
     value: string;
@@ -25,6 +27,9 @@ export interface PlaylistItem {
   slides: Slide[];
   author?: string;
   key?: string;
+  presentationPath?: string;
+  auditReport?: any;
+  originalFile?: File;
 }
 
 export interface RemotePlaylistSummary {
@@ -66,7 +71,7 @@ export interface AppState {
   obsShowHeader: boolean;
 
   clockPosition: "none" | "topRight" | "bottomRight" | "bottomLeft";
-  backgroundTheme: "nebula" | "worship-gold" | "royal-blue" | "emerald-calm" | "crimson-cross" | "solid-dark" | "custom-image" | "custom-video";
+  backgroundTheme: "nebula" | "worship-gold" | "royal-blue" | "emerald-calm" | "crimson-cross" | "solid-dark" | "motion-loop-1" | "motion-loop-2" | "motion-loop-3" | "custom-image" | "custom-video";
   customBackgroundImage: string | null;
   customBackgroundImageName: string | null;
   customBackgroundVideo: string | null;

@@ -1,11 +1,32 @@
+
+async function launchActivePresentationInLibreOffice() {
+  const item = playlist[activeItemIndex];
+  if (!item?.presentationPath) {
+    showOfflineToast("LibreOffice Impress", "Selecione uma apresentação importada para abrir com animações.");
+    return;
+  }
+  try {
+    showOfflineToast("▶ Abrindo no LibreOffice", `Iniciando apresentação com animações e efeitos no telão (Slide ${stagedSlideIndex + 1})...`);
+    await tauriInvoke("launch_libreoffice_presentation", {
+      filePath: item.presentationPath,
+      slideIndex: stagedSlideIndex >= 0 ? stagedSlideIndex + 1 : 1
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    showOfflineToast("Erro ao abrir LibreOffice", msg);
+  }
+}
+
 // Altaris Presenter Master Controller (Operator Center)
 // macOS / iOS Design Philosophy • Two-Click Staging Workflow • Visual Bible Navigator • Web Lyrics Search
-import { store, PlaylistItem, buildObsCss } from "./engine/state";
+import { store, PlaylistItem, buildObsCss, Slide } from "./engine/state";
 import { SlideCompositor } from "./engine/compositor";
 import { SongEngine, songToPlaylistItem, Song, OnlineSearchResult } from "./modules/songs";
 import { BibleEngine, BibleVerse, BibleVersionInfo, PUBLIC_DOMAIN_CATALOG, COMMUNITY_EXTERNAL_CATALOG, CatalogBibleEntry } from "./modules/bibles";
 import { getServerInfo, inTauri, tauriInvoke } from "./engine/server";
-import { processImportFiles } from "./engine/mediaImporter";
+import { processImportFiles, convertPresentationToPdf, convertPdfToSlides } from "./engine/mediaImporter";
+import { sanitizePptxWithAutoFit, auditPptxPresentation } from "./modules/slideAuditor";
+import { showLoadingHUD, updateLoadingHUD, hideLoadingHUD } from "./engine/loadingHud";
 
 
 // Toast Notification System for Offline Operations
@@ -216,50 +237,26 @@ setInterval(() => {
   statusClock.textContent = d.toTimeString().split(" ")[0];
 }, 1000);
 
-// Initialize Default Playlist
+function renderEmptyWorshipState(
+  title = "Culto Pronto",
+  message = 'Nenhum item na ordem do culto.<br>Clique em <b style="color: #94a3b8;">"+ Adicionar ao Culto"</b> ou use os atalhos para inserir hinos, passagens bíblicas ou apresentações.'
+) {
+  gridContainer.innerHTML = `
+    <div class="slide-grid-empty">
+      <div class="empty-icon">⛪</div>
+      <div class="empty-title">${title}</div>
+      <div class="empty-desc">${message}</div>
+    </div>
+  `;
+  activeItemTitle.textContent = "Culto Vazio";
+  activeItemBadge.style.display = "none";
+}
+
+// Initialize Default Playlist (Inicia vazio por padrão)
 async function initPlaylist() {
-  const p1: PlaylistItem = {
-    id: "welcome-item",
-    title: "Boas-Vindas & Abertura",
-    type: "alert",
-    slides: [
-      {
-        id: "s-welc-1",
-        title: "Boas-Vindas",
-        header: "Altaris Presenter",
-        text: "Sejam bem-vindos ao culto!\nOnde estiverem dois ou três reunidos em meu nome, ali estou eu.",
-        category: "intro",
-        background: { type: "shader", value: "nebula" }
-      }
-    ]
-  };
-
-  const allSongs = SongEngine.getAllSongs();
-  const p2 = songToPlaylistItem(allSongs[0], keyOffset);
-  const p3 = songToPlaylistItem(allSongs[1], keyOffset);
-
-  const verses = BibleEngine.findVerses("jo 3 16");
-  const p4: PlaylistItem = verses.length > 0
-    ? BibleEngine.versesToPlaylistItem(verses, true).item
-    : {
-        id: "bible-reading",
-        title: `Leitura Bíblica: João 3:16 (${BibleEngine.getActiveVersion().toUpperCase()})`,
-        type: "bible",
-        slides: [
-          {
-            id: "jo-3-16-fallback",
-            title: "João 3:16",
-            header: "João 3:16 (ACF)",
-            text: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.",
-            category: "bible",
-            background: { type: "shader", value: "nebula" }
-          }
-        ]
-      };
-
-  playlist = [p1, p2, p3, p4];
+  playlist = [];
   renderPlaylist();
-  selectPlaylistItem(1, true); // initial auto-live
+  renderEmptyWorshipState();
 }
 
 function updatePlaylistActiveHighlight() {
@@ -384,8 +381,7 @@ function renderPlaylist() {
       if (playlist.length === 0) {
         activeItemIndex = 0;
         renderPlaylist();
-        gridContainer.innerHTML = '<div style="padding: 40px; text-align: center; color: #64748b;">Culto vazio. Use a busca ou os botões acima para adicionar itens.</div>';
-        activeItemTitle.textContent = "Culto Vazio";
+        renderEmptyWorshipState();
       } else {
         if (activeItemIndex >= playlist.length) activeItemIndex = playlist.length - 1;
         renderPlaylist();
@@ -452,6 +448,32 @@ function selectPlaylistItem(index: number, fireImmediately: boolean = false, sta
   activeItemBadge.style.display = "inline-block";
   activeItemBadge.textContent = item.type.toUpperCase();
 
+  const btnImpress = document.getElementById("btn-launch-impress");
+  if (btnImpress) {
+    btnImpress.style.display = item.presentationPath ? "inline-flex" : "none";
+  }
+
+  const btnAudit = document.getElementById("btn-audit-report");
+  const btnAuditText = document.getElementById("btn-audit-report-text");
+  if (btnAudit && btnAuditText) {
+    if (item.auditReport) {
+      btnAudit.style.display = "inline-flex";
+      if (item.auditReport.overflowSlides === 0) {
+        btnAudit.style.background = "rgba(16, 185, 129, 0.15)";
+        btnAudit.style.borderColor = "rgba(16, 185, 129, 0.35)";
+        btnAudit.style.color = "#34d399";
+        btnAuditText.textContent = "🛡️ Layout 100% OK";
+      } else {
+        btnAudit.style.background = "rgba(245, 158, 11, 0.18)";
+        btnAudit.style.borderColor = "rgba(245, 158, 11, 0.45)";
+        btnAudit.style.color = "#fbbf24";
+        btnAuditText.textContent = `⚠️ ${item.auditReport.overflowSlides} Ajustes de Layout`;
+      }
+    } else {
+      btnAudit.style.display = "none";
+    }
+  }
+
   renderSlideMatrix(item);
 
   if (fireImmediately) {
@@ -512,6 +534,7 @@ function renderSlideMatrix(item: PlaylistItem) {
       <div class="slide-card-header">
         <span class="slide-badge-pill ${badgeClass}">${slide.title}</span>
         <div class="slide-status-tag-area">
+          ${slide.auditStatus === "overflow" || slide.auditStatus === "warning" ? `<span class="slide-badge-pill" style="background: rgba(245, 158, 11, 0.22); border: 1px solid rgba(245, 158, 11, 0.5); color: #fbbf24; font-size: 0.62rem; margin-right: 4px;" title="${slide.auditIssue || "Aviso de transbordo"}">⚠️ Transbordo</span>` : ""}
           ${isLive ? '<span class="status-tag-live">🔴 NO AR</span>' : isThisStaged ? '<span class="status-tag-staged">🟡 PRÉVIA</span>' : ''}
         </div>
       </div>
@@ -1747,7 +1770,11 @@ window.addEventListener("keydown", (e) => {
   }
   if (e.key === "F5") {
     e.preventDefault();
-    document.getElementById("btn-open-audience")?.click();
+    if (e.shiftKey && playlist[activeItemIndex]?.presentationPath) {
+      launchActivePresentationInLibreOffice();
+    } else {
+      document.getElementById("btn-open-audience")?.click();
+    }
     return;
   }
   if (e.key === "F6") {
@@ -1950,8 +1977,7 @@ document.getElementById("mi-new-worship")?.addEventListener("click", () => {
   if (confirm("Deseja iniciar um novo culto? A ordem atual será limpa.")) {
     playlist = [];
     renderPlaylist();
-    gridContainer.innerHTML = '<div style="padding: 40px; text-align: center; color: #64748b;">Culto novo iniciado. Clique em "+ Adicionar ao Culto" para inserir louvores ou versículos.</div>';
-    activeItemTitle.textContent = "Culto Vazio";
+    renderEmptyWorshipState("Culto Novo Iniciado", 'Clique em <b style="color: #94a3b8;">"+ Adicionar ao Culto"</b> ou use os atalhos para inserir hinos, versículos ou apresentações.');
   }
 });
 
@@ -1964,6 +1990,11 @@ document.getElementById("mi-import-file")?.addEventListener("click", () => {
   closeAllMenus();
   modalAddItem.style.display = "flex";
   switchTab(tabBtnImport, tabPaneImport);
+});
+
+document.getElementById("mi-import-media")?.addEventListener("click", () => {
+  closeAllMenus();
+  inputQuickMediaFiles?.click();
 });
 
 document.getElementById("mi-bible-nav")?.addEventListener("click", () => {
@@ -2681,13 +2712,14 @@ async function addMediaFilesToPlaylist(files: FileList | File[] | null) {
     if (items.length > 0) {
       playlist.splice(activeItemIndex + 1, 0, ...items);
       renderPlaylist();
-      selectPlaylistItem(activeItemIndex + 1, !toggleTwoClick.checked, 0);
-
+      selectPlaylistItem(activeItemIndex + 1);
       const totalSlides = items.reduce((acc, it) => acc + it.slides.length, 0);
       showOfflineToast("📁 Apresentação / Mídia Carregada", `${items.length} item(ns) adicionado(s) com ${totalSlides} slide(s) pronto(s) para o telão.`);
     }
   } catch (err) {
     console.error("Erro ao importar arquivos de mídia e apresentações:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    showOfflineToast("Falha na importação", message);
   }
 }
 
@@ -2881,6 +2913,14 @@ const prefTwoClick = document.getElementById("pref-two-click") as HTMLInputEleme
 const prefDefaultBible = document.getElementById("pref-default-bible") as HTMLSelectElement | null;
 
 // Visual Media Indicators & Badges Helper
+
+function syncBgThemeUploadRows(theme: string) {
+  const rowImg = document.getElementById("row-custom-image");
+  const rowVid = document.getElementById("row-custom-video");
+  if (rowImg) rowImg.style.display = theme === "custom-image" ? "flex" : "none";
+  if (rowVid) rowVid.style.display = theme === "custom-video" ? "flex" : "none";
+}
+
 function updateSelectedMediaBadges() {
   const st = store.getState();
 
@@ -3025,7 +3065,10 @@ function openPreferences(tabName: string = "general") {
     const st = store.getState();
     if (prefObsCustomHtml) prefObsCustomHtml.value = st.obsCustomHtml || "";
     if (prefObsCustomCss) prefObsCustomCss.value = st.obsCustomCss || "";
-    if (prefSelectBgTheme) prefSelectBgTheme.value = st.backgroundTheme || "nebula";
+    if (prefSelectBgTheme) {
+      prefSelectBgTheme.value = st.backgroundTheme || "nebula";
+      syncBgThemeUploadRows(st.backgroundTheme || "nebula");
+    }
     if (prefBgDimmer) {
       const pct = Math.round((st.backgroundDimmer ?? 0.45) * 100);
       prefBgDimmer.value = String(pct);
@@ -3150,7 +3193,20 @@ prefDefaultBible?.addEventListener("change", () => {
 });
 
 prefSelectBgTheme?.addEventListener("change", () => {
-  store.setState({ backgroundTheme: prefSelectBgTheme.value as any });
+  const val = prefSelectBgTheme.value as any;
+  store.setState({ backgroundTheme: val });
+  syncBgThemeUploadRows(val);
+  if (val === "motion-loop-1") {
+    showOfflineToast("🎬 Motion Background", "Loop 1: Partículas HD ativado no telão.");
+  } else if (val === "motion-loop-2") {
+    showOfflineToast("🎬 Motion Background", "Loop 2: Violão & Adoração ativado no telão.");
+  } else if (val === "motion-loop-3") {
+    showOfflineToast("🎬 Motion Background", "Loop 3: Bíblia & Louvor Dourado ativado no telão.");
+  } else if (val === "custom-image") {
+    showOfflineToast("🖼️ Imagem Customizada", "Escolha a imagem desejada no campo abaixo.");
+  } else if (val === "custom-video") {
+    showOfflineToast("🎬 Vídeo Customizado", "Escolha o vídeo desejado no campo abaixo.");
+  }
 });
 
 inputPrefBgImage?.addEventListener("change", () => {
@@ -3343,96 +3399,36 @@ store.onCommand(async (cmd) => {
 });
 
 // ==========================================
-// Advanced Raffle & Giveaway System (Sorteios & Dinâmicas)
+// Advanced Raffle System (Sorteios por Números)
 // ==========================================
 function renderRaffleUI() {
   const st = store.getState();
-  syncSegmentedGroup("seg-raffle-mode", st.raffleMode || "numbers");
-
-  const subNumbers = document.getElementById("raffle-subpanel-numbers");
-  const subNames = document.getElementById("raffle-subpanel-names");
   const modeLabel = document.getElementById("raffle-current-mode-label");
   const minInp = document.getElementById("pref-raffle-min") as HTMLInputElement | null;
   const maxInp = document.getElementById("pref-raffle-max") as HTMLInputElement | null;
   const noRepCheck = document.getElementById("pref-raffle-no-repeat") as HTMLInputElement | null;
 
-  if (subNumbers && subNames) {
-    if (st.raffleMode === "names") {
-      subNumbers.style.display = "none";
-      subNames.style.display = "flex";
-      if (modeLabel) modeLabel.textContent = `SORTEIO ATIVO: NOMES (${(st.raffleNames || []).length} PARTICIPANTES)`;
-    } else {
-      subNumbers.style.display = "flex";
-      subNames.style.display = "none";
-      if (modeLabel) modeLabel.textContent = `SORTEIO ATIVO: NÚMEROS (${st.raffleMinNumber || 1} A ${st.raffleMaxNumber || 200})`;
-    }
+  if (modeLabel) {
+    modeLabel.textContent = `SORTEIO ATIVO: NÚMEROS (${st.raffleMinNumber || 1} A ${st.raffleMaxNumber || 200})`;
   }
 
   if (minInp) minInp.value = String(st.raffleMinNumber || 1);
   if (maxInp) maxInp.value = String(st.raffleMaxNumber || 200);
   if (noRepCheck) noRepCheck.checked = st.raffleNoRepeat ?? true;
 
-  // Render Table of Names
-  const tbody = document.getElementById("raffle-names-tbody");
-  const counter = document.getElementById("raffle-names-counter");
-  if (tbody) {
-    const names = st.raffleNames || [];
-    const drawn = st.raffleDrawnNames || [];
-    if (names.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 12px;">Nenhum participante adicionado ainda.</td></tr>`;
-      if (counter) counter.textContent = "0 cadastrados";
-    } else {
-      if (counter) counter.textContent = `${names.length} cadastrados (${names.length - drawn.length} na urna)`;
-      tbody.innerHTML = names.map((name, idx) => {
-        const isWon = drawn.includes(name);
-        return `
-          <tr>
-            <td style="color: #64748b; font-family: monospace;">${idx + 1}</td>
-            <td style="font-weight: 500; ${isWon ? 'text-decoration: line-through; opacity: 0.5;' : ''}">${name}</td>
-            <td style="text-align: center;">
-              ${isWon ? '<span class="raffle-badge-won">🎉 Sorteado</span>' : '<span class="raffle-badge-pending">Na Urna</span>'}
-            </td>
-            <td style="text-align: center;">
-              <button type="button" class="btn btn-ghost btn-remove-raffle-name" data-idx="${idx}" style="padding: 1px 6px; font-size: 0.68rem; color: #f87171;" title="Remover participante">✕</button>
-            </td>
-          </tr>
-        `;
-      }).join("");
-
-      tbody.querySelectorAll<HTMLButtonElement>(".btn-remove-raffle-name").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const idx = parseInt(btn.getAttribute("data-idx") || "-1", 10);
-          if (idx >= 0) {
-            const list = [...(store.getState().raffleNames || [])];
-            list.splice(idx, 1);
-            store.setState({ raffleNames: list });
-            renderRaffleUI();
-          }
-        });
-      });
-    }
-  }
-
-  // Render History List
-  const winnersList = document.getElementById("raffle-winners-list");
+  // Render Winners History List
+  const winnersList = document.getElementById("raffle-winners-history-list");
   const winnersCount = document.getElementById("raffle-winners-count");
   if (winnersList) {
-    const wins: string[] = [];
-    if (st.raffleDrawnNumbers && st.raffleDrawnNumbers.length > 0) {
-      st.raffleDrawnNumbers.forEach((n) => wins.push(`Nº ${n}`));
-    }
-    if (st.raffleDrawnNames && st.raffleDrawnNames.length > 0) {
-      st.raffleDrawnNames.forEach((nm) => wins.push(nm));
-    }
-
+    const wins = st.raffleDrawnNumbers || [];
     if (wins.length === 0) {
       winnersList.innerHTML = `<span style="font-size: 0.72rem; color: #64748b; font-style: italic;">Nenhum sorteio realizado ainda nesta sessão.</span>`;
-      if (winnersCount) winnersCount.textContent = "Nenhum ganhador registrado";
+      if (winnersCount) winnersCount.textContent = "0 sorteios realizados";
     } else {
       if (winnersCount) winnersCount.textContent = `${wins.length} sorteio(s) realizado(s)`;
-      winnersList.innerHTML = wins.map((w, i) => `
+      winnersList.innerHTML = wins.map((num: number, i: number) => `
         <span class="raffle-badge-won" style="font-size: 0.74rem; padding: 3px 8px;">
-          ${i + 1}º: ${w}
+          ${i + 1}º: Nº ${num}
         </span>
       `).join("");
     }
@@ -3441,92 +3437,54 @@ function renderRaffleUI() {
 
 async function executeRaffleDraw(isFromQuickDrawer: boolean = false) {
   const st = store.getState();
-  const isNames = st.raffleMode === "names";
   const displayEl = document.getElementById("raffle-result-display");
   const suspenseCheck = document.getElementById("pref-raffle-suspense") as HTMLInputElement | null;
   const wantSuspense = !isFromQuickDrawer && (suspenseCheck ? suspenseCheck.checked : true);
 
-  let winnerText = "";
-  let winnerAlertMsg = "";
+  const min = st.raffleMinNumber || 1;
+  const max = Math.max(min, st.raffleMaxNumber || 200);
+  const drawnNums = st.raffleDrawnNumbers || [];
 
-  if (isNames) {
-    const allNames = st.raffleNames || [];
-    if (allNames.length === 0) {
-      showOfflineToast("Lista de Nomes Vazia", "Adicione participantes na aba Sorteios antes de sortear!");
-      return;
+  const pool: number[] = [];
+  for (let i = min; i <= max; i++) {
+    if (!st.raffleNoRepeat || !drawnNums.includes(i)) {
+      pool.push(i);
     }
-    const pool = (st.raffleNoRepeat ?? true) ? allNames.filter(n => !(st.raffleDrawnNames || []).includes(n)) : allNames;
-    if (pool.length === 0) {
-      showOfflineToast("Todos Já Sorteados!", "Todos os participantes da lista já foram sorteados. Zere o histórico para recomeçar!");
-      return;
-    }
-
-    if (wantSuspense && displayEl) {
-      displayEl.classList.add("shuffling");
-      const samplePool = allNames;
-      for (let i = 0; i < 15; i++) {
-        const randTemp = samplePool[Math.floor(Math.random() * samplePool.length)];
-        displayEl.textContent = `🎲 ${randTemp}...`;
-        await new Promise(r => setTimeout(r, 70 + i * 8));
-      }
-      displayEl.classList.remove("shuffling");
-    }
-
-    const winner = pool[Math.floor(Math.random() * pool.length)];
-    const drawn = [...(st.raffleDrawnNames || []), winner];
-    store.setState({
-      raffleDrawnNames: drawn,
-      raffleLastWinner: winner
-    });
-
-    winnerText = winner;
-    winnerAlertMsg = `🎲 GANHADOR(A) DO SORTEIO: ${winner}! 🎉`;
-  } else {
-    const min = st.raffleMinNumber || 1;
-    const max = Math.max(min, st.raffleMaxNumber || 200);
-    const drawnNums = st.raffleDrawnNumbers || [];
-
-    const pool: number[] = [];
-    for (let i = min; i <= max; i++) {
-      if (!st.raffleNoRepeat || !drawnNums.includes(i)) {
-        pool.push(i);
-      }
-    }
-
-    if (pool.length === 0) {
-      showOfflineToast("Intervalo Esgotado!", `Todos os números de ${min} a ${max} já foram sorteados. Zere o histórico para continuar!`);
-      return;
-    }
-
-    if (wantSuspense && displayEl) {
-      displayEl.classList.add("shuffling");
-      for (let i = 0; i < 16; i++) {
-        const randTemp = pool[Math.floor(Math.random() * pool.length)];
-        displayEl.textContent = `🎲 NÚMERO: ${randTemp}...`;
-        await new Promise(r => setTimeout(r, 60 + i * 8));
-      }
-      displayEl.classList.remove("shuffling");
-    }
-
-    const winner = pool[Math.floor(Math.random() * pool.length)];
-    const drawn = [...drawnNums, winner];
-    store.setState({
-      raffleDrawnNumbers: drawn,
-      raffleLastWinner: `Número ${winner}`
-    });
-
-    winnerText = `Nº ${winner}`;
-    winnerAlertMsg = `🎲 NÚMERO SORTEADO: ${winner} (de ${min} a ${max}) 🎉`;
   }
 
+  if (pool.length === 0) {
+    showOfflineToast("Intervalo Esgotado!", `Todos os números de ${min} a ${max} já foram sorteados. Zere o histórico para continuar!`);
+    return;
+  }
+
+  if (wantSuspense && displayEl) {
+    displayEl.classList.add("shuffling");
+    for (let i = 0; i < 16; i++) {
+      const randTemp = pool[Math.floor(Math.random() * pool.length)];
+      displayEl.textContent = `🎲 NÚMERO: ${randTemp}...`;
+      await new Promise(r => setTimeout(r, 60 + i * 8));
+    }
+    displayEl.classList.remove("shuffling");
+  }
+
+  const winner = pool[Math.floor(Math.random() * pool.length)];
+  const drawn = [...drawnNums, winner];
+  store.setState({
+    raffleDrawnNumbers: drawn,
+    raffleLastWinner: `Número ${winner}`
+  });
+
+  const winnerText = `Nº ${winner}`;
+
+  // Update display
   if (displayEl) {
-    displayEl.innerHTML = `<span>🎉 ${winnerText} 🎉</span>`;
+    displayEl.innerHTML = `
+      <div style="font-size: 0.85rem; color: #a5b4fc; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 4px;">🎉 NÚMERO SORTEADO</div>
+      <div style="font-size: 2.6rem; font-weight: 800; color: #fbbf24; text-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);">${winnerText}</div>
+    `;
   }
 
-  // Update Alert Input in Operator drawer
-  if (alertInput) {
-    alertInput.value = winnerAlertMsg;
-  }
+
 
   renderRaffleUI();
   showOfflineToast("Sorteio Realizado!", `${winnerText} foi o sorteado!`);
@@ -3565,85 +3523,49 @@ function initRaffleControls() {
     });
   });
 
-  // Import Names Button
-  document.getElementById("btn-raffle-add-names")?.addEventListener("click", () => {
-    const textarea = document.getElementById("pref-raffle-names-input") as HTMLTextAreaElement | null;
-    if (!textarea || !textarea.value.trim()) return;
-    const lines = textarea.value.split("\n").map(l => l.trim()).filter(l => l.length > 0);
-    if (lines.length > 0) {
-      const existing = store.getState().raffleNames || [];
-      const combined = [...existing, ...lines];
-      const unique = Array.from(new Set(combined));
-      store.setState({ raffleNames: unique });
-      textarea.value = "";
-      renderRaffleUI();
-      showOfflineToast("Participantes Importados", `${lines.length} nomes adicionados à urna de sorteio.`);
-    }
-  });
-
-  // Load Sample Names (20 names)
-  document.getElementById("btn-raffle-load-sample")?.addEventListener("click", () => {
-    const sampleNames = [
-      "Lucas Gabriel", "Mariana Costa", "Pr. Carlos Eduardo", "Beatriz Oliveira",
-      "Mateus Silveira", "Amanda Fernandes", "Gabriel Henrique", "Juliana Rocha",
-      "Rafael Lima", "Camila Santos", "Rodrigo Alves", "Fernanda Ribeiro",
-      "Thiago Martins", "Larissa Souza", "Bruno Carvalho", "Patrícia Dias",
-      "Felipe Castro", "Renata Gomes", "Daniel Moreira", "Letícia Cardoso"
-    ];
-    store.setState({ raffleNames: sampleNames, raffleDrawnNames: [] });
-    renderRaffleUI();
-    showOfflineToast("Exemplo Carregado", "20 nomes de participantes prontos para sortear!");
-  });
-
-  // Clear Names List
-  document.getElementById("btn-raffle-clear-names")?.addEventListener("click", () => {
-    store.setState({ raffleNames: [], raffleDrawnNames: [] });
-    renderRaffleUI();
-    showOfflineToast("Lista Limpa", "Todos os participantes foram removidos.");
-  });
-
-  // Shuffle Names
-  document.getElementById("btn-raffle-shuffle-names")?.addEventListener("click", () => {
-    const names = [...(store.getState().raffleNames || [])];
-    for (let i = names.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [names[i], names[j]] = [names[j], names[i]];
-    }
-    store.setState({ raffleNames: names });
-    renderRaffleUI();
-    showOfflineToast("Urna Embaralhada", "A ordem dos participantes foi aleatorizada!");
-  });
-
-  // Trigger Raffle Now
+  // Trigger Sorteio
   document.getElementById("btn-raffle-trigger-now")?.addEventListener("click", () => {
-    void executeRaffleDraw(false);
+    executeRaffleDraw(false);
   });
 
-  // Project on Screen
+  // Projetar no Telão (Cria Slide Especial Ao Vivo)
   document.getElementById("btn-raffle-project-screen")?.addEventListener("click", () => {
     const st = store.getState();
     if (!st.raffleLastWinner) {
       showOfflineToast("Nenhum Ganhador", "Realize um sorteio antes de projetar!");
       return;
     }
-    const msg = `🎉 GANHADOR(A) DO SORTEIO: ${st.raffleLastWinner.toUpperCase()}! 🏆`;
-    store.setState({ alertMessage: msg });
-    showOfflineToast("Projetado no Telão", "O anúncio do ganhador está no ar!");
+    const msg = `🎉 GANHADOR DO SORTEIO: ${st.raffleLastWinner.toUpperCase()}! 🏆`;
+    const raffleSlide: Slide = {
+      id: `raffle-win-${Date.now()}`,
+      title: "Resultado do Sorteio",
+      header: "SORTEIO AO VIVO",
+      text: msg,
+      category: "alert",
+      background: { type: "shader", value: "worship-gold" }
+    };
+    store.setState({ currentSlide: raffleSlide, isLive: true, isBlackout: false, isClearText: false });
+    showOfflineToast("Projetado no Telão", "Resultado do sorteio transmitido ao vivo!");
   });
 
-  // Copy to Alert Input
+  // Enviar para Banner de Avisos
   document.getElementById("btn-raffle-copy-alert")?.addEventListener("click", () => {
     const st = store.getState();
-    if (st.raffleLastWinner && alertInput) {
-      const msg = `🎉 GANHADOR DO SORTEIO: ${st.raffleLastWinner}!`;
-      alertInput.value = msg;
-      showOfflineToast("Copiado para Avisos", "Texto preenchido no painel de avisos rápidos.");
+    if (!st.raffleLastWinner) {
+      showOfflineToast("Nenhum Ganhador", "Realize um sorteio antes de enviar aos avisos!");
+      return;
+    }
+    const msg = `🎉 GANHADOR DO SORTEIO: ${st.raffleLastWinner}!`;
+    const alertInp = document.getElementById("input-quick-alert") as HTMLInputElement | null;
+    if (alertInp) {
+      alertInp.value = msg;
+      showOfflineToast("Copiado para Avisos", "Texto carregado na barra de alertas rápidos.");
     }
   });
 
   // Reset History
   document.getElementById("btn-raffle-reset-history")?.addEventListener("click", () => {
-    store.setState({ raffleDrawnNames: [], raffleDrawnNumbers: [], raffleLastWinner: null });
+    store.setState({ raffleDrawnNumbers: [], raffleLastWinner: null });
     const displayEl = document.getElementById("raffle-result-display");
     if (displayEl) displayEl.innerHTML = "<span>Pronto para sortear</span>";
     renderRaffleUI();
@@ -3666,11 +3588,7 @@ function initAppleSegmentedControls() {
     });
   };
 
-  // Raffle Mode Setting
-  wireGroup("seg-raffle-mode", (val) => {
-    store.setState({ raffleMode: val as any });
-    renderRaffleUI();
-  });
+
 
   // Telão Settings
   wireGroup("seg-font-size-scale", (val) => store.setState({ fontSizeScale: val as any }));
@@ -4036,3 +3954,251 @@ bootstrap();
   }, 400);
 })();
 
+
+document.getElementById("btn-launch-impress")?.addEventListener("click", () => {
+  launchActivePresentationInLibreOffice();
+});
+
+document.getElementById("mi-launch-impress")?.addEventListener("click", () => {
+  closeAllMenus();
+  launchActivePresentationInLibreOffice();
+});
+
+// Layout Audit & Auto-Fit Controller
+async function runAutoFitOnItem(item: PlaylistItem, targetSlideNum?: number) {
+  if (!item.auditReport) return;
+  let sourceFile = item.originalFile;
+
+  // Se o arquivo original não estiver em memória, tenta recarregar do cache nativo Tauri
+  if (!sourceFile && inTauri() && item.presentationPath) {
+    try {
+      const bytes = await tauriInvoke<number[]>("get_presentation_bytes", { filePath: item.presentationPath });
+      if (bytes && bytes.length > 0) {
+        sourceFile = new File([new Uint8Array(bytes)], "apresentacao.pptx", {
+          type: "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        });
+      }
+    } catch (e) {
+      console.warn("Falha ao carregar bytes da apresentação:", e);
+    }
+  }
+
+  if (!sourceFile) {
+    showOfflineToast("Auto-Fit", "Arquivo original da apresentação não encontrado para reajuste.");
+    return;
+  }
+
+  const modal = document.getElementById("modal-layout-audit");
+  if (modal) modal.style.display = "none";
+
+  const label = targetSlideNum !== undefined ? `Slide ${targetSlideNum}` : "Todos os slides";
+  showLoadingHUD("Auto-Ajustando Slides...", `Recalculando geometria e enquadramento de fontes (${label})...`);
+  updateLoadingHUD(20, "Aplicando Auto-Fit...", "Ajustando limites normativos e caixas de texto...");
+
+  try {
+    // 1. Sanitiza PPTX em memória
+    const sanitizedFile = await sanitizePptxWithAutoFit(sourceFile, item.auditReport, targetSlideNum);
+    updateLoadingHUD(50, "Renderizando Apresentação...", "Gerando novos slides com alta fidelidade visual...");
+
+    // 2. Converte PPTX para PDF
+    const pdfFile = await convertPresentationToPdf(sanitizedFile, (pct, count, sub) => {
+      updateLoadingHUD(50 + Math.round(pct * 0.3), count, sub);
+    });
+
+    if (!pdfFile) throw new Error("Falha ao renderizar nova apresentação após auto-ajuste.");
+
+    // 3. Converte PDF para slides em alta resolução (1080p / 4K)
+    const newSlides = await convertPdfToSlides(pdfFile, (curr, tot, msg) => {
+      const pct = 80 + Math.round((curr / tot) * 18);
+      updateLoadingHUD(pct, `${curr} / ${tot}`, msg);
+    });
+
+    // 4. Salva a versão sanitizada no cache do Tauri para que o LibreOffice use o arquivo perfeito
+    let newPath = item.presentationPath;
+    if (inTauri()) {
+      try {
+        const u8 = new Uint8Array(await sanitizedFile.arrayBuffer());
+        newPath = await tauriInvoke<string>("cache_presentation_file", {
+          filename: sanitizedFile.name,
+          data: Array.from(u8)
+        });
+      } catch (e) {
+        console.warn("Falha ao atualizar cache Tauri:", e);
+      }
+    }
+
+    // 5. Re-audita
+    const newAudit = await auditPptxPresentation(sanitizedFile);
+
+    // 6. Atualiza o item na playlist
+    item.slides = newSlides;
+    item.presentationPath = newPath;
+    item.originalFile = sanitizedFile;
+    item.auditReport = newAudit;
+
+    newAudit.items.forEach((it, idx) => {
+      if (item.slides[idx]) {
+        item.slides[idx].auditStatus = it.status;
+        item.slides[idx].auditIssue = it.issue;
+      }
+    });
+
+    hideLoadingHUD();
+    renderSlideMatrix(item);
+
+    // Atualiza botão do cabeçalho
+    const btnAudit = document.getElementById("btn-audit-report");
+    const btnAuditText = document.getElementById("btn-audit-report-text");
+    if (btnAudit && btnAuditText) {
+      if (newAudit.overflowSlides === 0) {
+        btnAudit.style.background = "rgba(16, 185, 129, 0.15)";
+        btnAudit.style.borderColor = "rgba(16, 185, 129, 0.35)";
+        btnAudit.style.color = "#34d399";
+        btnAuditText.textContent = "🛡️ Layout 100% OK";
+      } else {
+        btnAudit.style.background = "rgba(245, 158, 11, 0.18)";
+        btnAudit.style.borderColor = "rgba(245, 158, 11, 0.45)";
+        btnAudit.style.color = "#fbbf24";
+        btnAuditText.textContent = `⚠️ ${newAudit.overflowSlides} Ajustes de Layout`;
+      }
+    }
+
+    showOfflineToast("✨ Auto-Fit Aplicado!", "Slides recalculados com sucesso! Os textos agora cabem com folga dentro das formas.");
+    openLayoutAuditModal(item);
+  } catch (err: any) {
+    hideLoadingHUD();
+    showOfflineToast("Erro no Auto-Fit", err.message || String(err));
+  }
+}
+
+function openLayoutAuditModal(item: PlaylistItem) {
+  const modal = document.getElementById("modal-layout-audit");
+  if (!modal || !item.auditReport) return;
+  const rep = item.auditReport;
+
+  const subtitle = document.getElementById("audit-subtitle");
+  if (subtitle) {
+    subtitle.textContent = `${item.title} — ${rep.totalSlides} slides analisados com verificação métrica de caixas de texto.`;
+  }
+
+  const banner = document.getElementById("audit-status-banner");
+  if (banner) {
+    if (rep.overflowSlides === 0) {
+      banner.style.background = "rgba(16, 185, 129, 0.12)";
+      banner.style.border = "1px solid rgba(16, 185, 129, 0.3)";
+      banner.innerHTML = `
+        <span style="font-size: 1.4rem;">🎉</span>
+        <div>
+          <div style="font-weight: 700; color: #34d399; font-size: 0.88rem; margin-bottom: 2px;">Layout 100% Compatível</div>
+          <div style="font-size: 0.78rem; color: #94a3b8; line-height: 1.4;">Todas as caixas de texto possuem margens seguras. Nenhum texto ultrapassará as formas delimitadoras.</div>
+        </div>
+      `;
+    } else {
+      banner.style.background = "rgba(245, 158, 11, 0.12)";
+      banner.style.border = "1px solid rgba(245, 158, 11, 0.35)";
+      banner.innerHTML = `
+        <span style="font-size: 1.4rem;">⚠️</span>
+        <div>
+          <div style="font-weight: 700; color: #fbbf24; font-size: 0.88rem; margin-bottom: 2px;">${rep.overflowSlides} Slide(s) com Risco de Transbordo</div>
+          <div style="font-size: 0.78rem; color: #94a3b8; line-height: 1.4;">Caixas de texto foram criadas muito rentes à borda no PowerPoint. Clique em <strong>Auto-Ajustar</strong> para que o Altaris recalcule os limites garantindo que o texto nunca ultrapasse as formas.</div>
+        </div>
+      `;
+    }
+  }
+
+  const fontsList = document.getElementById("audit-fonts-list");
+  if (fontsList) {
+    fontsList.innerHTML = "";
+    if (rep.fontsDetected.length === 0) {
+      fontsList.innerHTML = `<span style="font-size: 0.76rem; color: #64748b;">Nenhuma fonte personalizada detectada.</span>`;
+    } else {
+      rep.fontsDetected.forEach((f: any) => {
+        const isOk = f.available;
+        const pill = document.createElement("span");
+        pill.className = "slide-badge-pill";
+        pill.style.cssText = `padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; background: ${isOk ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)"}; border: 1px solid ${isOk ? "rgba(16,185,129,0.35)" : "rgba(245,158,11,0.35)"}; color: ${isOk ? "#34d399" : "#fbbf24"};`;
+        pill.innerHTML = `<strong>${f.name}</strong>: ${isOk ? "🟢 Instalada" : "🟡 Substituta"}`;
+        fontsList.appendChild(pill);
+      });
+    }
+  }
+
+  const slidesList = document.getElementById("audit-slides-list");
+  if (slidesList) {
+    slidesList.innerHTML = "";
+    const problemItems = rep.items.filter((it: any) => it.status !== "ok");
+    if (problemItems.length === 0) {
+      slidesList.innerHTML = `<div style="padding: 12px; text-align: center; color: #34d399; font-size: 0.82rem; font-weight: 600;">✅ Nenhum transbordo de texto detectado! Todos os slides estão perfeitamente contidos.</div>`;
+    } else {
+      problemItems.forEach((it: any) => {
+        const row = document.createElement("div");
+        row.style.cssText = "background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;";
+        row.innerHTML = `
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
+              <span class="slide-badge-pill" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; font-size: 0.7rem;">Slide ${it.slideNumber}</span>
+              <span style="font-size: 0.78rem; font-weight: 600; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.shapeText || "Texto da forma"}</span>
+            </div>
+            <div style="font-size: 0.72rem; color: #94a3b8; line-height: 1.3;">${it.issue || "Risco de transbordo de margem"}</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button class="btn btn-autofit-slide" style="padding: 4px 10px; font-size: 0.72rem; font-weight: 600; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.45); color: #a5b4fc; border-radius: 6px; cursor: pointer; white-space: nowrap;">✨ Ajustar</button>
+            <button class="btn btn-view-slide" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #cbd5e1; border-radius: 6px; cursor: pointer; white-space: nowrap;">Ver</button>
+          </div>
+        `;
+        row.querySelector(".btn-autofit-slide")?.addEventListener("click", () => {
+          runAutoFitOnItem(item, it.slideNumber);
+        });
+        row.querySelector(".btn-view-slide")?.addEventListener("click", () => {
+          modal.style.display = "none";
+          const targetSlide = item.slides[it.slideIndex];
+          if (targetSlide) {
+            stageSlide(it.slideIndex);
+            syncRemoteState();
+          }
+        });
+        slidesList.appendChild(row);
+      });
+    }
+  }
+
+  modal.style.display = "flex";
+}
+
+document.getElementById("btn-autofit-all")?.addEventListener("click", () => {
+  const item = playlist[activeItemIndex];
+  if (item) runAutoFitOnItem(item);
+});
+
+document.getElementById("btn-audit-report")?.addEventListener("click", () => {
+  const item = playlist[activeItemIndex];
+  if (item) openLayoutAuditModal(item);
+});
+
+document.getElementById("btn-close-audit")?.addEventListener("click", () => {
+  const modal = document.getElementById("modal-layout-audit");
+  if (modal) modal.style.display = "none";
+});
+
+document.getElementById("btn-dismiss-audit")?.addEventListener("click", () => {
+  const modal = document.getElementById("modal-layout-audit");
+  if (modal) modal.style.display = "none";
+});
+
+document.getElementById("btn-sync-fonts-modal")?.addEventListener("click", async () => {
+  try {
+    if (inTauri()) {
+      const res = await tauriInvoke<string>("ensure_system_fonts");
+      showOfflineToast("🔤 Fontes Sincronizadas", res || "Fontes essenciais garantidas no sistema.");
+    } else {
+      showOfflineToast("🔤 Fontes", "Fontes do sistema já operacionais no navegador.");
+    }
+  } catch (e: any) {
+    showOfflineToast("Fontes", e.message || String(e));
+  }
+});
+
+// Sincroniza fontes automaticamente no boot do Altaris
+if (inTauri()) {
+  tauriInvoke("ensure_system_fonts").catch(() => {});
+}

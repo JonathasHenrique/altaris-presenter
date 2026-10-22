@@ -97,7 +97,7 @@ export default defineConfig({
                     if (fs.existsSync(inPath)) fs.unlinkSync(inPath);
                   } catch {}
 
-                  if (err || !fs.existsSync(outPdfPath)) {
+                  if (!fs.existsSync(outPdfPath)) {
                     res.statusCode = 500;
                     res.end(JSON.stringify({ error: err ? err.message : "Conversão não gerou PDF" }));
                     return;

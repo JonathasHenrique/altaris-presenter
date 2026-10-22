@@ -2,9 +2,15 @@ import type { Slide, PlaylistItem } from "./state";
 import { inTauri, tauriInvoke } from "./server";
 import { showLoadingHUD, updateLoadingHUD, hideLoadingHUD } from "./loadingHud";
 import { parsePptxNative } from "../modules/pptxNativeParser";
+import { auditPptxPresentation } from "../modules/slideAuditor";
 
 // Bibliotecas pesadas carregadas sob demanda (lazy) — nunca quebram a inicialização do app.
 let pdfjsPromise: Promise<any> | null = null;
+
+function hasPdfHeader(bytes: Uint8Array): boolean {
+  return bytes.length >= 5 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46 && bytes[4] === 0x2d;
+}
+
 async function loadPdfJs(): Promise<any> {
   if (!pdfjsPromise) {
     pdfjsPromise = (async () => {
@@ -32,7 +38,7 @@ async function loadJSZip(): Promise<any> {
  * Converte arquivo de apresentação (.pptx, .ppt, .odp) em PDF de alta fidelidade
  * usando o LibreOffice no backend nativo Tauri ou servidor local Vite.
  */
-async function convertPresentationToPdf(
+export async function convertPresentationToPdf(
   file: File,
   onProgress?: (percent: number, countText?: string, subtitle?: string) => void
 ): Promise<File | null> {
@@ -50,11 +56,14 @@ async function convertPresentationToPdf(
       });
       if (resBytes && resBytes.length > 0) {
         const u8 = new Uint8Array(resBytes);
+        if (!hasPdfHeader(u8)) throw new Error("O conversor nativo não retornou um arquivo PDF válido.");
         return new File([u8], file.name.replace(/\.[^/.]+$/, ".pdf"), { type: "application/pdf" });
       }
     } catch (err) {
       console.warn("Falha na conversão Tauri via LibreOffice:", err);
+      return null;
     }
+    return null;
   }
 
   // 2. Tenta via endpoint do servidor local Vite (desenvolvimento / fallback)
@@ -69,7 +78,9 @@ async function convertPresentationToPdf(
     if (res.ok) {
       const blob = await res.blob();
       if (blob.size > 0) {
-        return new File([blob], file.name.replace(/\.[^/.]+$/, ".pdf"), { type: "application/pdf" });
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        if (!hasPdfHeader(bytes)) throw new Error("O conversor local não retornou um arquivo PDF válido.");
+        return new File([bytes], file.name.replace(/\.[^/.]+$/, ".pdf"), { type: "application/pdf" });
       }
     }
   } catch (err) {
@@ -192,47 +203,91 @@ export async function processImportFiles(
       const lowerName = f.name.toLowerCase();
       const isVideo = f.type.startsWith("video/") || /\.(mp4|webm|mov|mkv)$/i.test(lowerName);
       const isPdf = f.type === "application/pdf" || lowerName.endsWith(".pdf");
-      const isPptx = lowerName.endsWith(".pptx") || lowerName.endsWith(".ppt") || lowerName.endsWith(".odp") || lowerName.endsWith(".pps") || lowerName.endsWith(".ppsx");
+      const isPptx = /\.(pptx?|pptm|odp|fodp|pps|ppsx|ppsm|pot|potx|potm|key)$/i.test(lowerName);
 
       if (isPptx) {
-        showLoadingHUD("Abrindo Apresentação...", `Extraindo arte, imagens e textos de "${f.name}"...`);
-        updateLoadingHUD(10, "Iniciando...", "Lendo formato PPTX nativo...");
+        showLoadingHUD("Abrindo Apresentação...", `Renderizando "${f.name}" para o telão...`);
+        updateLoadingHUD(15, "Iniciando renderizador...", "Convertendo slides mantendo layout e arte originais...");
 
         let slides: Slide[] = [];
 
+        // 1. Prioridade: Conversão via motor LibreOffice -> PDF com alta fidelidade visual
         try {
-          // 1. Tenta extração nativa de alta fidelidade (extrai imagens originais + textos + auto-fit)
-          slides = await parsePptxNative(f, (curr, tot, msg) => {
-            const pct = 10 + Math.round((curr / tot) * 75);
-            updateLoadingHUD(pct, `${curr} / ${tot}`, msg);
-          });
-        } catch (nativeErr) {
-          console.warn("Falha no extrator nativo PPTX, tentando LibreOffice:", nativeErr);
-        }
-
-        // 2. Se o extrator nativo não extraiu slides, tenta fallback via conversor de PDF
-        if (!slides || slides.length === 0) {
-          updateLoadingHUD(60, "Processando apresentação...", "Convertendo via motor secundário...");
           const pdfFile = await convertPresentationToPdf(f, (pct, count, sub) => {
             updateLoadingHUD(pct, count, sub);
           });
 
           if (pdfFile) {
             slides = await convertPdfToSlides(pdfFile, (curr, tot, msg) => {
-              const pct = 60 + Math.round((curr / tot) * 38);
+              const pct = 50 + Math.round((curr / tot) * 45);
               updateLoadingHUD(pct, `${curr} / ${tot}`, msg);
             });
-          } else {
-            slides = await convertPptxToSlidesFallback(f);
+          }
+        } catch (pdfErr) {
+          console.warn("Falha na renderização de apresentação via PDF:", pdfErr);
+        }
+
+        // 2. Fallback: Se o LibreOffice não estiver disponível ou falhar, extração nativa PPTX
+        if (!slides || slides.length === 0) {
+          updateLoadingHUD(40, "Extraindo conteúdo...", "Lendo formato PPTX nativo...");
+          try {
+            slides = await parsePptxNative(f, (curr, tot, msg) => {
+              const pct = 40 + Math.round((curr / tot) * 50);
+              updateLoadingHUD(pct, `${curr} / ${tot}`, msg);
+            });
+          } catch (nativeErr) {
+            console.warn("Falha no extrator nativo PPTX:", nativeErr);
           }
         }
 
+        // 3. Fallback de emergência (extrai textos simples)
+        if (!slides || slides.length === 0) {
+          try {
+            slides = await convertPptxToSlidesFallback(f);
+          } catch (fallbackErr) {
+            console.warn("Falha no extrator de fallback:", fallbackErr);
+          }
+        }
+
+        if (!slides || slides.length === 0) {
+          throw new Error(`Não foi possível processar "${f.name}". Certifique-se de que o arquivo não está corrompido ou instale o LibreOffice.`);
+        }
+
+        // 4. Executa Auditoria Inteligente de Layout, Fontes e Risco de Transbordo
+        let auditReport: any = null;
+        try {
+          auditReport = await auditPptxPresentation(f);
+          if (auditReport && slides.length > 0) {
+            auditReport.items.forEach((it: any, sIdx: number) => {
+              if (slides[sIdx]) {
+                slides[sIdx].auditStatus = it.status;
+                slides[sIdx].auditIssue = it.issue;
+              }
+            });
+          }
+        } catch (auditErr) {
+          console.warn("Falha na auditoria de layout da apresentação:", auditErr);
+        }
+
         if (slides.length > 0) {
+          let originalPath = (f as any).path as string | undefined;
+          if (!originalPath && inTauri()) {
+            try {
+              const arrayBuffer = await f.arrayBuffer();
+              originalPath = await tauriInvoke<string>("cache_presentation_file", {
+                filename: f.name,
+                data: Array.from(new Uint8Array(arrayBuffer))
+              });
+            } catch (e) {
+              console.warn("Falha ao salvar cache do arquivo de apresentação:", e);
+            }
+          }
+
           window.dispatchEvent(new CustomEvent("altaris:toast", {
             detail: {
-              title: "✅ Apresentação Importada com Sucesso!",
-              message: `${slides.length} slides processados com imagens e textos preservados nativamente.`,
-              duration: 5000
+              title: "✅ Apresentação Pronta para Projeção!",
+              message: `${slides.length} slides carregados no Altaris. Para exibir animações no telão, use o botão "Animações (LibreOffice)".`,
+              duration: 6000
             }
           }));
 
@@ -241,7 +296,10 @@ export async function processImportFiles(
             title: `📊 ${f.name.replace(/\.[^/.]+$/, "")} (${slides.length} slides)`,
             type: "media",
             author: "Apresentação EBD / Slides",
-            slides
+            slides,
+            presentationPath: originalPath,
+            auditReport,
+            originalFile: f
           });
         }
       } else if (isPdf) {

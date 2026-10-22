@@ -111,4 +111,28 @@ store.subscribe((state) => {
     showSongTitle: state.showSongTitle,
     bibleReferenceFormat: state.bibleReferenceFormat
   });
+  wakeProjectorVideos();
 });
+
+// Garante reprodução de vídeos em loop no projetor sem exigir clique manual
+function wakeProjectorVideos() {
+  document.querySelectorAll("video").forEach((v) => {
+    v.defaultMuted = true;
+    v.muted = true;
+    v.volume = 0;
+    v.setAttribute("muted", "");
+    v.setAttribute("autoplay", "");
+    v.setAttribute("playsinline", "");
+    if (v.paused) v.play().catch(() => {});
+  });
+}
+window.addEventListener("focus", wakeProjectorVideos);
+window.addEventListener("mousemove", wakeProjectorVideos, { once: true });
+window.addEventListener("pointerdown", wakeProjectorVideos, { once: true });
+window.addEventListener("keydown", wakeProjectorVideos, { once: true });
+
+// Despertar imediato ao carregar
+wakeProjectorVideos();
+setTimeout(wakeProjectorVideos, 100);
+setTimeout(wakeProjectorVideos, 300);
+setTimeout(wakeProjectorVideos, 800);
