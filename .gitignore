@@ -6,11 +6,6 @@ dist/
 *.log
 
 # Large media files (videos, animations)
-public/data/videos/*.mp4
-public/data/videos/*.webm
-*.mp4
-*.webm
-*.mkv
 
 # User-downloaded copyrighted songs & external bibles (keep only open public domain)
 public/data/songs/coletanea_gospel.json

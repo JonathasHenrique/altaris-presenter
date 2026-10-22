@@ -1,3 +1,4 @@
+import { loadAppJson } from "../engine/assetLoader";
 // Ultra-Fast Scripture Search Engine with Multi-Version & Import Support
 import { Slide, PlaylistItem } from "../engine/state";
 
@@ -237,13 +238,11 @@ export class BibleEngine {
       }
     }
 
-    // Load built-in or disk-saved static JSON files (/data/bibles/biblia_<id>.json)
-    const targetUrl = `/data/bibles/biblia_${versionId.toLowerCase()}.json`;
+    // Load built-in or disk-saved static JSON files (data/bibles/biblia_<id>.json)
+    const rel = `data/bibles/biblia_${versionId.toLowerCase()}.json`;
     try {
-      const res = await fetch(targetUrl);
-      if (res.ok) {
-        const rawText = (await res.text()).replace(/^\uFEFF/, "");
-        const data: BibleBookData[] = JSON.parse(rawText);
+      const data = await loadAppJson<BibleBookData[]>(rel);
+      if (data && Array.isArray(data) && data.length > 0) {
         this.versionDataCache.set(versionId, data);
         this.applyBooks(data);
         console.log(`[BibleEngine] Bíblia ${versionId.toUpperCase()} carregada com ${data.length} livros`);

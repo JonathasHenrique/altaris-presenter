@@ -1,9 +1,9 @@
-const { app, BrowserWindow, screen, ipcMain, shell, Menu } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
-const { spawn } = require('child_process');
-const { startServer } = require('./server');
+const { app, BrowserWindow, screen, ipcMain, shell, Menu, MenuItem } = require("electron");
+const path = require("path");
+const fs = require("fs");
+const os = require("os");
+const { spawn } = require("child_process");
+const { startServer } = require("./server");
 
 // Flatpak and container sandbox compatibility
 if (process.env.FLATPAK_ID || process.env.container === "flatpak" || fs.existsSync("/.flatpak-info")) {
@@ -12,16 +12,31 @@ if (process.env.FLATPAK_ID || process.env.container === "flatpak" || fs.existsSy
   app.commandLine.appendSwitch("disable-setuid-sandbox");
 }
 
-
 // Autoplay 100% automático no Chromium sem restrição de gesto
-app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-app.commandLine.appendSwitch('disable-features', 'PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies');
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+app.commandLine.appendSwitch("disable-features", "PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies");
 
 let mainWindow = null;
 let audienceWindow = null;
 let stageWindow = null;
 let serverInstance = null;
-const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
+const isDev = process.env.NODE_ENV === "development" || process.argv.includes("--dev");
+
+function findSofficeBinary() {
+  if (process.platform === "win32") {
+    const candidates = [
+      "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
+      "C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe",
+      path.join(process.env.LOCALAPPDATA || "", "Programs", "LibreOffice", "program", "soffice.exe"),
+      path.join(process.env.ProgramFiles || "C:\\Program Files", "LibreOffice", "program", "soffice.exe"),
+      path.join(process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)", "LibreOffice", "program", "soffice.exe")
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) return c;
+    }
+  }
+  return "soffice";
+}
 
 function loadWindowPage(win, file) {
   if (isDev) {
@@ -37,13 +52,12 @@ function loadWindowPage(win, file) {
   }
 }
 
-
 function resolvePreloadPath() {
-  const candidate1 = path.join(__dirname, 'electron-preload.js');
+  const candidate1 = path.join(__dirname, "electron-preload.js");
   if (fs.existsSync(candidate1)) return candidate1;
-  const candidate2 = path.join(__dirname, 'preload.js');
+  const candidate2 = path.join(__dirname, "preload.js");
   if (fs.existsSync(candidate2)) return candidate2;
-  return path.join(__dirname, 'dist', 'electron-preload.js');
+  return path.join(__dirname, "dist", "electron-preload.js");
 }
 
 function getDisplays() {
@@ -67,7 +81,7 @@ function toggleAudienceWindow(monitorIndex) {
 
   const displays = screen.getAllDisplays();
   let targetDisplay = displays[0];
-  if (typeof monitorIndex === 'number' && displays[monitorIndex]) {
+  if (typeof monitorIndex === "number" && displays[monitorIndex]) {
     targetDisplay = displays[monitorIndex];
   } else if (displays.length > 1) {
     targetDisplay = displays[1];
@@ -80,10 +94,10 @@ function toggleAudienceWindow(monitorIndex) {
     y: targetDisplay.bounds.y,
     width: 960,
     height: 540,
-    title: 'Altaris - Projeção',
+    title: "Altaris - Projeção",
     frame: !hasMultiple,
     fullscreen: hasMultiple,
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
     webPreferences: {
       preload: resolvePreloadPath(),
       webSecurity: false,
@@ -91,8 +105,8 @@ function toggleAudienceWindow(monitorIndex) {
     }
   });
 
-  loadWindowPage(audienceWindow, 'audience.html');
-  audienceWindow.on('closed', () => { audienceWindow = null; });
+  loadWindowPage(audienceWindow, "audience.html");
+  audienceWindow.on("closed", () => { audienceWindow = null; });
   return true;
 }
 
@@ -105,7 +119,7 @@ function toggleStageWindow(monitorIndex) {
 
   const displays = screen.getAllDisplays();
   let targetDisplay = displays[0];
-  if (typeof monitorIndex === 'number' && displays[monitorIndex]) {
+  if (typeof monitorIndex === "number" && displays[monitorIndex]) {
     targetDisplay = displays[monitorIndex];
   } else if (displays.length > 1) {
     targetDisplay = displays[1];
@@ -116,8 +130,8 @@ function toggleStageWindow(monitorIndex) {
     y: targetDisplay.bounds.y,
     width: 960,
     height: 540,
-    title: 'Altaris - Retorno de Palco',
-    backgroundColor: '#000000',
+    title: "Altaris - Retorno de Palco",
+    backgroundColor: "#000000",
     webPreferences: {
       preload: resolvePreloadPath(),
       webSecurity: false,
@@ -125,33 +139,52 @@ function toggleStageWindow(monitorIndex) {
     }
   });
 
-  loadWindowPage(stageWindow, 'stage.html');
-  stageWindow.on('closed', () => { stageWindow = null; });
+  loadWindowPage(stageWindow, "stage.html");
+  stageWindow.on("closed", () => { stageWindow = null; });
   return true;
 }
 
 function setupIpcHandlers() {
-  ipcMain.handle('get_displays', () => getDisplays());
+  ipcMain.handle("get_displays", () => getDisplays());
 
-  ipcMain.handle('server_info', () => serverInstance ? serverInstance.serverInfo : null);
+  ipcMain.handle("server_info", () => serverInstance ? serverInstance.serverInfo : null);
 
-  ipcMain.handle('toggle_audience_window', (_, args) => {
-    const idx = args && typeof args.monitorIndex === 'number' ? args.monitorIndex : null;
+  ipcMain.handle("toggle_audience_window", (_, args) => {
+    const idx = args && typeof args.monitorIndex === "number" ? args.monitorIndex : null;
     return toggleAudienceWindow(idx);
   });
 
-  ipcMain.handle('toggle_stage_window', (_, args) => {
-    const idx = args && typeof args.monitorIndex === 'number' ? args.monitorIndex : null;
+  ipcMain.handle("toggle_stage_window", (_, args) => {
+    const idx = args && typeof args.monitorIndex === "number" ? args.monitorIndex : null;
     return toggleStageWindow(idx);
   });
 
-  ipcMain.handle('open_browser_url', (_, { url }) => {
+  ipcMain.handle("open_browser_url", (_, { url }) => {
     if (url) shell.openExternal(url);
     return true;
   });
 
-  ipcMain.handle('cache_presentation_file', async (_, { filename, data }) => {
-    const tempDir = path.join(os.tmpdir(), 'altaris-presentations');
+  ipcMain.handle("read_app_file", async (_, { relativePath }) => {
+    const cleanRel = relativePath.replace(/^(\.\/|\/)/, "");
+    const candidatePaths = [
+      path.join(__dirname, cleanRel),
+      path.join(__dirname, "dist", cleanRel),
+      path.join(__dirname, "..", cleanRel),
+      path.join(__dirname, "..", "public", cleanRel),
+      path.join(process.resourcesPath || "", cleanRel),
+      path.join(process.resourcesPath || "", "app.asar", cleanRel),
+      path.join(process.resourcesPath || "", "app.asar", "dist", cleanRel)
+    ];
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        return fs.readFileSync(p, "utf8");
+      }
+    }
+    throw new Error("Arquivo não encontrado: " + relativePath);
+  });
+
+  ipcMain.handle("cache_presentation_file", async (_, { filename, data }) => {
+    const tempDir = path.join(os.tmpdir(), "altaris-presentations");
     fs.mkdirSync(tempDir, { recursive: true });
     const target = path.join(tempDir, filename);
     const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
@@ -159,62 +192,105 @@ function setupIpcHandlers() {
     return target;
   });
 
-  ipcMain.handle('get_presentation_bytes', async (_, { filePath }) => {
+  ipcMain.handle("get_presentation_bytes", async (_, { filePath }) => {
     if (fs.existsSync(filePath)) {
       return Array.from(fs.readFileSync(filePath));
     }
-    throw new Error('Arquivo não encontrado: ' + filePath);
+    throw new Error("Arquivo não encontrado: " + filePath);
   });
 
-  ipcMain.handle('launch_libreoffice_presentation', async (_, { filePath, slideIndex }) => {
-    const profileDir = path.join(os.tmpdir(), 'altaris-lo-profile');
-    fs.mkdirSync(profileDir, { recursive: true });
-    const profileUrl = `file://${profileDir.replace(/\\/g, '/')}`;
+  ipcMain.handle("launch_libreoffice_presentation", async (_, { filePath, slideIndex }) => {
+    try {
+      const sofficeBin = findSofficeBinary();
+      if (process.platform === "win32" && !fs.existsSync(sofficeBin)) {
+        return {
+          success: false,
+          error: "LibreOffice não foi detectado no Windows. Para exibir apresentações com transições nativas, instale o LibreOffice gratuito (https://www.libreoffice.org)."
+        };
+      }
 
-    const args = [
-      `-env:UserInstallation=${profileUrl}`,
-      '--nologo',
-      '--norestore'
-    ];
-    if (slideIndex && slideIndex > 0) {
-      args.push(`--show=${slideIndex}`);
-    } else {
-      args.push('--show');
+      const profileDir = path.join(os.tmpdir(), "altaris-lo-profile");
+      fs.mkdirSync(profileDir, { recursive: true });
+      const profileUrl = `file://${profileDir.replace(/\\/g, "/")}`;
+
+      const args = [
+        `-env:UserInstallation=${profileUrl}`,
+        "--nologo",
+        "--norestore"
+      ];
+      if (slideIndex && slideIndex > 0) {
+        args.push(`--show=${slideIndex}`);
+      } else {
+        args.push("--show");
+      }
+      args.push(filePath);
+
+      const env = { ...process.env, SAL_USE_VCLPLUGIN: "gtk3", SAL_DISABLE_OPENCL: "1", P11_KIT_DEBUG: "none" };
+      return new Promise((resolve) => {
+        let child;
+        try {
+          child = spawn(sofficeBin, args, { env, detached: true, stdio: "ignore" });
+        } catch (e) {
+          return resolve({ success: false, error: "Falha ao executar LibreOffice: " + (e.message || String(e)) });
+        }
+
+        child.on("error", (err) => {
+          resolve({
+            success: false,
+            error: "LibreOffice não encontrado no sistema: " + err.message
+          });
+        });
+
+        child.unref();
+        setTimeout(() => {
+          resolve({ success: true });
+        }, 600);
+      });
+    } catch (err) {
+      return { success: false, error: "Erro ao abrir apresentação: " + (err.message || String(err)) };
     }
-    args.push(filePath);
-
-    const env = { ...process.env, SAL_USE_VCLPLUGIN: 'gtk3', SAL_DISABLE_OPENCL: '1', P11_KIT_DEBUG: 'none' };
-    const child = spawn('soffice', args, { env, detached: true, stdio: 'ignore' });
-    child.unref();
-    return true;
   });
 
-  ipcMain.handle('convert_presentation_to_pdf', async (_, { filename, data }) => {
-    const tempDir = path.join(os.tmpdir(), 'altaris-convert');
+  ipcMain.handle("convert_presentation_to_pdf", async (_, { filename, data }) => {
+    const sofficeBin = findSofficeBinary();
+    if (process.platform === "win32" && !fs.existsSync(sofficeBin)) {
+      throw new Error("LibreOffice não instalado no Windows.");
+    }
+
+    const tempDir = path.join(os.tmpdir(), "altaris-convert");
     fs.mkdirSync(tempDir, { recursive: true });
     const inPath = path.join(tempDir, filename);
     const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
     fs.writeFileSync(inPath, buf);
 
     return new Promise((resolve, reject) => {
-      const child = spawn('soffice', ['--headless', '--convert-to', 'pdf', '--outdir', tempDir, inPath]);
-      child.on('close', (code) => {
+      let child;
+      try {
+        child = spawn(sofficeBin, ["--headless", "--convert-to", "pdf", "--outdir", tempDir, inPath]);
+      } catch (err) {
+        return reject(new Error("LibreOffice não instalado"));
+      }
+
+      child.on("error", (err) => {
+        reject(new Error("LibreOffice não encontrado no sistema: " + err.message));
+      });
+
+      child.on("close", (code) => {
         if (code === 0) {
-          const outPdf = inPath.replace(/\.[^/.]+$/, '.pdf');
+          const outPdf = inPath.replace(/\.[^/.]+$/, ".pdf");
           if (fs.existsSync(outPdf)) {
             const pdfBytes = Array.from(fs.readFileSync(outPdf));
             resolve(pdfBytes);
             return;
           }
         }
-        reject(new Error('Falha ao converter apresentação via LibreOffice'));
+        reject(new Error("Falha ao converter apresentação via LibreOffice"));
       });
-      child.on('error', (err) => reject(err));
     });
   });
 
-  ipcMain.handle('ensure_system_fonts', async () => {
-    return 'Fontes verificadas nativamente.';
+  ipcMain.handle("ensure_system_fonts", async () => {
+    return "Fontes verificadas nativamente.";
   });
 }
 
@@ -224,8 +300,8 @@ function createMainWindow() {
     height: 900,
     minWidth: 1100,
     minHeight: 720,
-    title: 'Altaris - Centro de Controle',
-    backgroundColor: '#0a0d14',
+    title: "Altaris - Centro de Controle",
+    backgroundColor: "#0a0d14",
     webPreferences: {
       preload: resolvePreloadPath(),
       webSecurity: false,
@@ -233,11 +309,43 @@ function createMainWindow() {
     }
   });
 
-  Menu.setApplicationMenu(null);
+  // Menu de edição invisível para garantir atalhos padrão (Ctrl+C, Ctrl+V, Ctrl+A, Ctrl+Z)
+  const template = [
+    {
+      label: "Editar",
+      submenu: [
+        { role: "undo", label: "Desfazer" },
+        { role: "redo", label: "Refazer" },
+        { type: "separator" },
+        { role: "cut", label: "Recortar" },
+        { role: "copy", label: "Copiar" },
+        { role: "paste", label: "Colar" },
+        { role: "selectAll", label: "Selecionar Tudo" }
+      ]
+    }
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  mainWindow.setMenuBarVisibility(false);
+  mainWindow.autoHideMenuBar = true;
 
-  loadWindowPage(mainWindow, 'index.html');
+  // Context Menu com botão direito em campos de texto
+  mainWindow.webContents.on("context-menu", (_, params) => {
+    if (params.isEditable) {
+      const menu = new Menu();
+      menu.append(new MenuItem({ role: "undo", label: "Desfazer" }));
+      menu.append(new MenuItem({ role: "redo", label: "Refazer" }));
+      menu.append(new MenuItem({ type: "separator" }));
+      menu.append(new MenuItem({ role: "cut", label: "Recortar" }));
+      menu.append(new MenuItem({ role: "copy", label: "Copiar" }));
+      menu.append(new MenuItem({ role: "paste", label: "Colar" }));
+      menu.append(new MenuItem({ role: "selectAll", label: "Selecionar Tudo" }));
+      menu.popup();
+    }
+  });
 
-  mainWindow.on('closed', () => {
+  loadWindowPage(mainWindow, "index.html");
+
+  mainWindow.on("closed", () => {
     mainWindow = null;
     if (audienceWindow && !audienceWindow.isDestroyed()) audienceWindow.close();
     if (stageWindow && !stageWindow.isDestroyed()) stageWindow.close();
@@ -245,18 +353,18 @@ function createMainWindow() {
 }
 
 app.whenReady().then(async () => {
-  const baseDir = path.join(__dirname, isDev ? '..' : '.');
+  const baseDir = path.join(__dirname, isDev ? ".." : ".");
   serverInstance = await startServer(baseDir, isDev);
   setupIpcHandlers();
   createMainWindow();
 
-  app.on('activate', () => {
+  app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });

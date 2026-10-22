@@ -43,10 +43,12 @@ export interface RenderOptions {
 
 
 function resolveVideoSrc(theme?: string, customVid?: string | null): string | null {
-  if (theme === "motion-loop-1") return "/data/videos/bg1.mp4";
-  if (theme === "motion-loop-2") return "/data/videos/bg2.mp4";
-  if (theme === "motion-loop-3") return "/data/videos/bg3.mp4";
-  if (theme === "custom-video") return customVid || "/data/videos/bg1.mp4";
+  const isHttp = typeof window !== "undefined" && window.location.protocol.startsWith("http");
+  const base = isHttp ? "/data/videos/" : "./data/videos/";
+  if (theme === "motion-loop-1") return `${base}bg1.mp4`;
+  if (theme === "motion-loop-2") return `${base}bg2.mp4`;
+  if (theme === "motion-loop-3") return `${base}bg3.mp4`;
+  if (theme === "custom-video") return customVid || `${base}bg1.mp4`;
   return null;
 }
 function isVideoTheme(theme?: string): boolean {

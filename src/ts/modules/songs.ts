@@ -1,3 +1,4 @@
+import { loadAppJson } from "../engine/assetLoader";
 // Altaris Song & Chord Transposition Engine with Multi-Format Importers
 import { Slide, PlaylistItem } from "../engine/state";
 
@@ -228,9 +229,8 @@ export class SongEngine {
     this.loadCustomSongs();
 
     try {
-      const res = await fetch("/data/songs/harpa_crista_640.json");
-      if (res.ok) {
-        const rawMap: Record<string, HarpaHymnRaw> = await res.json();
+      const rawMap = await loadAppJson<Record<string, HarpaHymnRaw>>("data/songs/harpa_crista_640.json");
+      if (rawMap && typeof rawMap === "object") {
         const songs: Song[] = [];
 
         for (const [key, raw] of Object.entries(rawMap)) {
@@ -274,9 +274,8 @@ export class SongEngine {
     }
 
     try {
-      const packRes = await fetch("/data/songs/coletanea_gospel.json");
-      if (packRes.ok) {
-        const rawPack: { title: string; artist: string; lyrics: string }[] = await packRes.json();
+      const rawPack = await loadAppJson<{ title: string; artist: string; lyrics: string }[]>("data/songs/coletanea_gospel.json");
+      if (rawPack && Array.isArray(rawPack)) {
         this.packSongs = rawPack.map((p, idx) => {
           const s = this.parseLyricsToSong(p.title, p.artist || "Louvor", "C", p.lyrics);
           s.id = `hpack-${idx}`;

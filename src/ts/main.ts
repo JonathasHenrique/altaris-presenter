@@ -6,14 +6,18 @@ async function launchActivePresentationInLibreOffice() {
     return;
   }
   try {
-    showOfflineToast("▶ Abrindo no LibreOffice", `Iniciando apresentação com animações e efeitos no telão (Slide ${stagedSlideIndex + 1})...`);
-    await tauriInvoke("launch_libreoffice_presentation", {
+    const res: any = await tauriInvoke("launch_libreoffice_presentation", {
       filePath: item.presentationPath,
       slideIndex: stagedSlideIndex >= 0 ? stagedSlideIndex + 1 : 1
     });
+    if (res && res.success === false) {
+      showOfflineToast("LibreOffice Não Encontrado", res.error);
+    } else {
+      showOfflineToast("▶ Abrindo no LibreOffice", `Iniciando apresentação com animações e efeitos no telão (Slide ${stagedSlideIndex + 1})...`);
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    showOfflineToast("Erro ao abrir LibreOffice", msg);
+    showOfflineToast("Aviso LibreOffice", msg);
   }
 }
 
@@ -3249,7 +3253,7 @@ inputPrefBgVideo?.addEventListener("change", async () => {
 
 document.querySelectorAll(".btn-preset-bg-video").forEach((btn) => {
   btn.addEventListener("click", () => {
-    const vidUrl = btn.getAttribute("data-video") || "/data/videos/bg1.mp4";
+    const vidUrl = btn.getAttribute("data-video") || "./data/videos/bg1.mp4";
     const label = btn.getAttribute("data-label") || "Vídeo Loop HD";
     store.setState({
       customBackgroundVideo: vidUrl,
@@ -3853,103 +3857,7 @@ async function bootstrap() {
 
 bootstrap();
 
-// ==========================================
-// Live UI Interaction & Bug Recorder + Automated E2E Test Runner
-// ==========================================
-(function initLiveTelemetry() {
-  function sendTelemetry(eventType: string, payload: Record<string, any>) {
-    try {
-      fetch("/__telemetry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventType, ...payload })
-      }).catch(() => {});
-    } catch {}
-  }
 
-  window.addEventListener("error", (e) => {
-    sendTelemetry("ERROR", {
-      message: e.message,
-      filename: e.filename,
-      lineno: e.lineno,
-      colno: e.colno
-    });
-  });
-
-  window.addEventListener("unhandledrejection", (e) => {
-    sendTelemetry("UNHANDLED_REJECTION", {
-      reason: String(e.reason)
-    });
-  });
-
-  document.addEventListener("click", (e) => {
-    const t = e.target as HTMLElement | null;
-    if (!t) return;
-    const interactive = t.closest("button, a, select, input, .menu-item, .playlist-item, .slide-card, .top-menu-trigger, .prefs-tab-btn, .pill-btn, .bible-seg-btn") as HTMLElement | null;
-    const el = interactive || t;
-    const rect = el.getBoundingClientRect();
-    setTimeout(() => {
-      const openModals = Array.from(document.querySelectorAll(".modal-backdrop, .top-menu-dropdown, .drawer-backdrop"))
-        .filter((m) => (m as HTMLElement).style.display !== "none" && getComputedStyle(m).display !== "none")
-        .map((m) => m.id || m.className);
-      sendTelemetry("CLICK", {
-        tag: el.tagName,
-        id: el.id || null,
-        className: typeof el.className === "string" ? el.className : null,
-        text: (el.innerText || (el as HTMLInputElement).value || "").trim().slice(0, 80),
-        x: Math.round(e.clientX),
-        y: Math.round(e.clientY),
-        rect: { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.width), h: Math.round(rect.height) },
-        openModals,
-        activeItemIndex,
-        stagedSlideIndex,
-        liveSlideIndex,
-        currentSlideTitle: store.getState().currentSlide?.title || null
-      });
-    }, 60);
-  }, true);
-
-  document.addEventListener("keydown", (e) => {
-    if (["Shift", "Control", "Alt", "Meta"].includes(e.key)) return;
-    sendTelemetry("KEYDOWN", {
-      key: e.key,
-      code: e.code,
-      ctrl: e.ctrlKey || e.metaKey,
-      targetId: (e.target as HTMLElement)?.id || null
-    });
-  }, true);
-
-  sendTelemetry("SESSION_START", {
-    viewport: `${window.innerWidth}x${window.innerHeight}`,
-    screen: `${window.screen.width}x${window.screen.height}`
-  });
-
-  // Poll for automated E2E test commands
-  setInterval(async () => {
-    try {
-      const r = await fetch("/__test_poll");
-      if (!r.ok) return;
-      const data = await r.json();
-      if (data.command) {
-        try {
-          const fn = new Function("store", "BibleEngine", "SongEngine", "openPreferences", "switchPrefsTab", "showQrModal", "selectPlaylistItem", "fireSlide", `return (async () => { ${data.command} })();`);
-          const res = await fn(store, BibleEngine, SongEngine, openPreferences, switchPrefsTab, showQrModal, selectPlaylistItem, fireSlide);
-          await fetch("/__test_poll", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ reportResult: { ok: true, res } })
-          });
-        } catch (err: any) {
-          await fetch("/__test_poll", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ reportResult: { ok: false, error: err?.message || String(err) } })
-          });
-        }
-      }
-    } catch {}
-  }, 400);
-})();
 
 
 document.getElementById("btn-launch-impress")?.addEventListener("click", () => {
