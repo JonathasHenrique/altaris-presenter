@@ -404,7 +404,14 @@ export class SlideCompositor {
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
     if (this.currentSlide?.layout && this.currentSlide.layout.elements && this.currentSlide.layout.elements.length > 0 && !this.options.isClearText) {
-      this.drawNativeSlideLayout(this.currentSlide.layout);
+      if (this.options.layout === "lowerThird") {
+        const displaySlide: Slide = this.options.uppercaseLyrics
+          ? { ...this.currentSlide, text: this.currentSlide.text.toUpperCase() }
+          : this.currentSlide;
+        this.drawLowerThird(displaySlide);
+      } else {
+        this.drawNativeSlideLayout(this.currentSlide.layout);
+      }
     } else {
       if (this.options.showBackground && !this.options.alphaChannel) this.drawBackground();
 
@@ -515,6 +522,7 @@ export class SlideCompositor {
 
       // Texto com Auto-fit dentro do bounding box
       if (el.text && el.text.trim()) {
+        const textToDraw = this.options.uppercaseLyrics ? el.text.toUpperCase() : el.text;
         ctx.save();
         const align = el.align || "center";
         ctx.textAlign = align;
@@ -549,7 +557,7 @@ export class SlideCompositor {
 
         for (let s = targetMaxSize; s >= targetMinSize; s -= 2) {
           ctx.font = `${isItalic}${weight} ${s}px ${activeFont}`;
-          const lines = this.wrap(el.text, maxTextW);
+          const lines = this.wrap(textToDraw, maxTextW);
           finalLines = lines;
           chosenSize = s;
           if (lines.length * s * 1.25 <= maxTextH) break;
