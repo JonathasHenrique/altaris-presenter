@@ -3913,14 +3913,30 @@ async function handleLocalAiOptimization() {
   }
 
   showLoadingHUD("Verificando IA Local...", "Conectando ao Ollama (localhost:11434)...");
-  const status = await checkOllamaStatus();
+  let status = await checkOllamaStatus();
+
+  if (!status.available) {
+    // Tenta auto-iniciar caso o binário esteja presente no computador
+    try {
+      const daemonRes: any = await tauriInvoke("start_ollama_daemon");
+      if (daemonRes && daemonRes.success) {
+        await new Promise((r) => setTimeout(r, 1400));
+        status = await checkOllamaStatus();
+      }
+    } catch {}
+  }
   hideLoadingHUD();
 
   if (!status.available) {
+    const modalOllama = document.getElementById("modal-ollama");
+    if (modalOllama) {
+      modalOllama.style.display = "flex";
+      return;
+    }
     showOfflineToast(
       "✨ IA Local (Ollama)",
-      "Ollama não foi detectado em execução no seu computador. Para usar IA local gratuita: 1) Instale de ollama.com  2) Execute 'ollama run llama3.2'. O Altaris usará o Auto-Fit matemático inteligente!",
-      7000
+      "Ollama não foi detectado. Para usar IA local gratuita, instale de ollama.com e execute 'ollama run llama3.2'.",
+      6000
     );
     return;
   }
@@ -4203,3 +4219,75 @@ document.getElementById("btn-sync-fonts-modal")?.addEventListener("click", async
 if (inTauri()) {
   tauriInvoke("ensure_system_fonts").catch(() => {});
 }
+
+
+// Gerenciador do Modal Ollama
+document.getElementById("btn-close-ollama-modal")?.addEventListener("click", () => {
+  const m = document.getElementById("modal-ollama");
+  if (m) m.style.display = "none";
+});
+
+document.getElementById("btn-ollama-download")?.addEventListener("click", () => {
+  try {
+    tauriInvoke("open_browser_url", { url: "https://ollama.com/download" });
+  } catch {
+    window.open("https://ollama.com/download", "_blank");
+  }
+});
+
+document.getElementById("btn-ollama-start-daemon")?.addEventListener("click", async () => {
+  const btn = document.getElementById("btn-ollama-start-daemon");
+  if (btn) btn.textContent = "⚡ Iniciando serviço em segundo plano...";
+  try {
+    await tauriInvoke("start_ollama_daemon");
+    await new Promise((r) => setTimeout(r, 1500));
+    const st = await checkOllamaStatus();
+    if (st.available) {
+      const badge = document.getElementById("ollama-status-badge");
+      if (badge) {
+        badge.textContent = "Conectado";
+        badge.style.background = "rgba(34, 197, 94, 0.2)";
+        badge.style.color = "#4ade80";
+        badge.style.borderColor = "rgba(34, 197, 94, 0.4)";
+      }
+      showOfflineToast("✨ IA Local Conectada!", "Ollama iniciado e pronto para uso.");
+      setTimeout(() => {
+        const m = document.getElementById("modal-ollama");
+        if (m) m.style.display = "none";
+        handleLocalAiOptimization();
+      }, 700);
+    } else {
+      showOfflineToast("Ollama não instalado", "Instale o Ollama de ollama.com primeiro.");
+      if (btn) btn.textContent = "⚡ Iniciar Servidor Ollama Automaticamente";
+    }
+  } catch {
+    if (btn) btn.textContent = "⚡ Iniciar Servidor Ollama Automaticamente";
+  }
+});
+
+document.getElementById("btn-ollama-retry")?.addEventListener("click", async () => {
+  const st = await checkOllamaStatus();
+  const badge = document.getElementById("ollama-status-badge");
+  if (st.available) {
+    if (badge) {
+      badge.textContent = "Conectado";
+      badge.style.background = "rgba(34, 197, 94, 0.2)";
+      badge.style.color = "#4ade80";
+      badge.style.borderColor = "rgba(34, 197, 94, 0.4)";
+    }
+    showOfflineToast("✨ IA Local Conectada!", "Ollama detectado com sucesso.");
+    setTimeout(() => {
+      const m = document.getElementById("modal-ollama");
+      if (m) m.style.display = "none";
+      handleLocalAiOptimization();
+    }, 600);
+  } else {
+    if (badge) {
+      badge.textContent = "Desconectado";
+      badge.style.background = "rgba(239, 68, 68, 0.2)";
+      badge.style.color = "#f87171";
+      badge.style.borderColor = "rgba(239, 68, 68, 0.4)";
+    }
+    showOfflineToast("Não conectado", "Ollama ainda não está rodando na porta 11434.");
+  }
+});

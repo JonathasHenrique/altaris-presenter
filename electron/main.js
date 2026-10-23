@@ -197,6 +197,62 @@ function toggleStageWindow(monitorIndex) {
   return true;
 }
 
+
+function findOllamaBinary() {
+  const isWin = process.platform === "win32";
+  const standardPaths = isWin
+    ? [
+        path.join(process.env.LOCALAPPDATA || "", "Programs", "Ollama", "ollama.exe"),
+        "C:\\Program Files\\Ollama\\ollama.exe",
+        "C:\\Users\\" + (process.env.USERNAME || "") + "\\AppData\\Local\\Programs\\Ollama\\ollama.exe"
+      ]
+    : [
+        "/usr/local/bin/ollama",
+        "/usr/bin/ollama",
+        path.join(os.homedir(), ".local", "bin", "ollama"),
+        path.join(os.homedir(), "bin", "ollama")
+      ];
+
+  for (const p of standardPaths) {
+    if (p && fs.existsSync(p)) return p;
+  }
+
+  try {
+    const cmd = isWin ? "where ollama" : "which ollama";
+    const out = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"], encoding: "utf8" }).trim();
+    if (out && fs.existsSync(out.split("\n")[0].trim())) {
+      return out.split("\n")[0].trim();
+    }
+  } catch {}
+
+  return null;
+}
+
+let ollamaDaemonProcess = null;
+
+function autoStartOllamaIfAvailable() {
+  const bin = findOllamaBinary();
+  if (!bin) return;
+
+  const http = require("http");
+  const req = http.get("http://localhost:11434/api/tags", (res) => {
+    // Já está em execução
+  });
+  req.on("error", () => {
+    try {
+      ollamaDaemonProcess = spawn(bin, ["serve"], {
+        detached: true,
+        stdio: "ignore",
+        env: { ...process.env, OLLAMA_ORIGINS: "*" }
+      });
+      ollamaDaemonProcess.unref();
+      console.log("[Altaris] Servidor Ollama iniciado automaticamente.");
+    } catch (e) {
+      console.warn("[Altaris] Erro ao auto-iniciar Ollama:", e);
+    }
+  });
+  req.setTimeout(1200, () => req.destroy());
+}
 function setupIpcHandlers() {
   ipcMain.handle("get_displays", () => getDisplays());
 
@@ -361,6 +417,29 @@ function setupIpcHandlers() {
   ipcMain.handle("ensure_system_fonts", async () => {
     return "Fontes verificadas nativamente.";
   });
+
+  ipcMain.handle("check_ollama_status", async () => {
+    const bin = findOllamaBinary();
+    return { installed: !!bin, path: bin };
+  });
+
+  ipcMain.handle("start_ollama_daemon", async () => {
+    const bin = findOllamaBinary();
+    if (!bin) return { success: false, error: "Ollama não instalado." };
+    try {
+      if (!ollamaDaemonProcess) {
+        ollamaDaemonProcess = spawn(bin, ["serve"], {
+          detached: true,
+          stdio: "ignore",
+          env: { ...process.env, OLLAMA_ORIGINS: "*" }
+        });
+        ollamaDaemonProcess.unref();
+      }
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message || String(e) };
+    }
+  });
 }
 
 function createMainWindow() {
@@ -425,6 +504,7 @@ app.whenReady().then(async () => {
   const baseDir = path.join(__dirname, isDev ? ".." : ".");
   serverInstance = await startServer(baseDir, isDev);
   setupIpcHandlers();
+  autoStartOllamaIfAvailable();
   createMainWindow();
 
   app.on("activate", () => {

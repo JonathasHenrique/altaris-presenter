@@ -508,7 +508,7 @@ export class SlideCompositor {
         ctx.restore();
       }
 
-      // Imagem
+      // Imagem: preenchimento exato do quadro delimitador (sem letterbox)
       if (el.type === "image" && el.imageUrl) {
         let img = this.layoutImageCache.get(el.imageUrl);
         if (!img) {
@@ -518,12 +518,7 @@ export class SlideCompositor {
           this.layoutImageCache.set(el.imageUrl, img);
         }
         if (img.complete && img.naturalWidth > 0) {
-          const scale = Math.min(ew / img.naturalWidth, eh / img.naturalHeight);
-          const dw = img.naturalWidth * scale;
-          const dh = img.naturalHeight * scale;
-          const dx = ex + (ew - dw) / 2;
-          const dy = ey + (eh - dh) / 2;
-          ctx.drawImage(img, dx, dy, dw, dh);
+          ctx.drawImage(img, ex, ey, ew, eh);
         }
       }
 
@@ -535,8 +530,8 @@ export class SlideCompositor {
         ctx.textAlign = align;
         ctx.textBaseline = "middle";
 
-        const padX = Math.min(24, ew * 0.04);
-        const padY = Math.min(20, eh * 0.04);
+        const padX = Math.min(18, Math.max(8, ew * 0.02));
+        const padY = Math.min(14, Math.max(6, eh * 0.02));
         const maxTextW = Math.max(20, ew - padX * 2);
         const maxTextH = Math.max(20, eh - padY * 2);
 
@@ -558,9 +553,10 @@ export class SlideCompositor {
           ctx.shadowBlur = 0;
         }
 
+        // Proporção de 144 DPI do PowerPoint (1pt = 1.92px em 1920x1080)
         const originalPt = el.fontSize ? (el.fontSize / 100) : 32;
-        const basePx = Math.round(originalPt * 1.45);
-        const targetMaxSize = Math.round(Math.max(24, Math.min(130, basePx)));
+        const basePx = Math.round(originalPt * 1.92);
+        const targetMaxSize = Math.round(Math.max(26, Math.min(140, basePx)));
         const targetMinSize = 16;
         const weight = el.bold ? 700 : 400;
         const isItalic = el.italic ? "italic " : "";
@@ -573,11 +569,11 @@ export class SlideCompositor {
           const lines = this.wrap(textToDraw, maxTextW);
           finalLines = lines;
           chosenSize = s;
-          if (lines.length * s * 1.25 <= maxTextH) break;
+          if (lines.length * s * 1.15 <= maxTextH) break;
         }
 
         ctx.font = `${isItalic}${weight} ${chosenSize}px ${elementFont}`;
-        const lineHeight = chosenSize * 1.25;
+        const lineHeight = chosenSize * 1.15;
         const totalBlockH = finalLines.length * lineHeight;
         const startY = ey + (eh - totalBlockH) / 2 + lineHeight / 2;
         const textAnchorX =
