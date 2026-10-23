@@ -534,15 +534,17 @@ function renderSlideMatrix(item: PlaylistItem) {
           } else if (el.text) {
             const align = el.align || "center";
             const color = el.color || "#ffffff";
-            const isBold = el.bold ? "font-weight: 700;" : "";
+            const isBold = el.bold ? "font-weight: 700;" : "font-weight: 400;";
+            const fontFamily = el.fontFamily ? `font-family: ${el.fontFamily}, sans-serif;` : "";
             elInner = `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: ${
               align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start"
-            }; text-align: ${align}; font-size: 7.5px; line-height: 1.15; color: ${color}; ${isBold} overflow: hidden; padding: 2px;">${el.text.slice(0, 90)}${el.text.length > 90 ? "..." : ""}</div>`;
+            }; text-align: ${align}; font-size: 7.5px; line-height: 1.15; color: ${color}; ${isBold} ${fontFamily} overflow: hidden; padding: 2px;">${el.text.slice(0, 90)}${el.text.length > 90 ? "..." : ""}</div>`;
           }
           const shapeBg = el.bgColor ? `background: ${el.bgColor};` : "";
           const shapeBorder = el.borderColor ? `border: 1px solid ${el.borderColor};` : "";
           const shapeRadius = el.borderRadius ? `border-radius: 4px;` : "";
-          return `<div style="position: absolute; left: ${el.x}%; top: ${el.y}%; width: ${el.w}%; height: ${el.h}%; ${shapeBg} ${shapeBorder} ${shapeRadius} pointer-events: none; overflow: hidden;">${elInner}</div>`;
+          const shadowStyle = el.hasShadow ? `box-shadow: 0 2px 5px rgba(0,0,0,0.35);` : "";
+          return `<div style="position: absolute; left: ${el.x}%; top: ${el.y}%; width: ${el.w}%; height: ${el.h}%; ${shapeBg} ${shapeBorder} ${shapeRadius} ${shadowStyle} pointer-events: none; overflow: hidden;">${elInner}</div>`;
         })
         .join("");
 

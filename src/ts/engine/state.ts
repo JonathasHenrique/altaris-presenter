@@ -7,6 +7,7 @@ export interface SlideElementParagraph {
   text: string;
   align?: "left" | "center" | "right";
   fontSize?: number;
+  fontFamily?: string;
   color?: string;
   bold?: boolean;
   italic?: boolean;
@@ -24,6 +25,7 @@ export interface SlideElement {
   bgColor?: string;
   borderColor?: string;
   borderRadius?: number;
+  hasShadow?: boolean;
   text?: string;
   paragraphs?: SlideElementParagraph[];
   fontSize?: number;

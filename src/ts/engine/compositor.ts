@@ -462,10 +462,7 @@ export class SlideCompositor {
       this.drawBackground();
     }
 
-    const activeFont = this.options.fontFamily || FONT;
-    const fontStyle = this.options.fontStyle || "bold";
-    const defaultWeight = fontStyle === "bold" || fontStyle === "boldItalic" ? 700 : 500;
-    const fontPrefix = fontStyle === "italic" || fontStyle === "boldItalic" ? "italic " : "";
+
 
     // 2. Elementos em ordem Z
     for (const el of layout.elements) {
@@ -477,6 +474,12 @@ export class SlideCompositor {
       // Forma / Container (Background ou Borda)
       if (el.bgColor || el.borderColor) {
         ctx.save();
+        if (el.hasShadow) {
+          ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+          ctx.shadowBlur = 14;
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 4;
+        }
         if (el.bgColor) {
           ctx.fillStyle = el.bgColor;
           if (el.borderRadius && el.borderRadius > 0) {
@@ -486,6 +489,10 @@ export class SlideCompositor {
           } else {
             ctx.fillRect(ex, ey, ew, eh);
           }
+        }
+        if (el.hasShadow) {
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
         }
         if (el.borderColor) {
           ctx.strokeStyle = el.borderColor;
@@ -520,7 +527,7 @@ export class SlideCompositor {
         }
       }
 
-      // Texto com Auto-fit dentro do bounding box
+      // Texto com fidelidade original ao PowerPoint/Impress e Auto-fit
       if (el.text && el.text.trim()) {
         const textToDraw = this.options.uppercaseLyrics ? el.text.toUpperCase() : el.text;
         ctx.save();
@@ -528,42 +535,48 @@ export class SlideCompositor {
         ctx.textAlign = align;
         ctx.textBaseline = "middle";
 
-        const padX = Math.min(24, ew * 0.05);
-        const padY = Math.min(20, eh * 0.05);
+        const padX = Math.min(24, ew * 0.04);
+        const padY = Math.min(20, eh * 0.04);
         const maxTextW = Math.max(20, ew - padX * 2);
         const maxTextH = Math.max(20, eh - padY * 2);
 
-        // Cor do texto
-        const txtColor = el.color || this.options.textColor || "#ffffff";
+        // Fonte original da apresentação
+        const elementFont = el.fontFamily ? `${el.fontFamily}, sans-serif` : (this.options.fontFamily || FONT);
+
+        // Cor original do texto no PowerPoint
+        const txtColor = el.color || "#FFFFFF";
         ctx.fillStyle = txtColor;
 
-        if (this.options.textShadowStyle === "soft") {
-          ctx.shadowColor = "rgba(0,0,0,0.85)";
-          ctx.shadowBlur = 12;
+        const isWhiteText = txtColor.toLowerCase() === "#ffffff" || txtColor.toLowerCase() === "#f8fafc";
+        if (isWhiteText) {
+          ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
+          ctx.shadowBlur = 8;
           ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 3;
+          ctx.shadowOffsetY = 2;
+        } else {
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
         }
 
-        const basePt = el.fontSize ? Math.round((el.fontSize / 100) * 1.33) : 38;
-        const scaleMult =
-          this.options.fontSizeScale === "max" ? 1.2 : this.options.fontSizeScale === "normal" ? 0.9 : 1.0;
-        const targetMaxSize = Math.round(Math.max(26, Math.min(108, basePt * scaleMult)));
+        const originalPt = el.fontSize ? (el.fontSize / 100) : 32;
+        const basePx = Math.round(originalPt * 1.45);
+        const targetMaxSize = Math.round(Math.max(24, Math.min(130, basePx)));
         const targetMinSize = 16;
-        const weight = el.bold ? 700 : defaultWeight;
-        const isItalic = el.italic ? "italic " : fontPrefix;
+        const weight = el.bold ? 700 : 400;
+        const isItalic = el.italic ? "italic " : "";
 
         let chosenSize = targetMinSize;
         let finalLines: string[] = [];
 
         for (let s = targetMaxSize; s >= targetMinSize; s -= 2) {
-          ctx.font = `${isItalic}${weight} ${s}px ${activeFont}`;
+          ctx.font = `${isItalic}${weight} ${s}px ${elementFont}`;
           const lines = this.wrap(textToDraw, maxTextW);
           finalLines = lines;
           chosenSize = s;
           if (lines.length * s * 1.25 <= maxTextH) break;
         }
 
-        ctx.font = `${isItalic}${weight} ${chosenSize}px ${activeFont}`;
+        ctx.font = `${isItalic}${weight} ${chosenSize}px ${elementFont}`;
         const lineHeight = chosenSize * 1.25;
         const totalBlockH = finalLines.length * lineHeight;
         const startY = ey + (eh - totalBlockH) / 2 + lineHeight / 2;
