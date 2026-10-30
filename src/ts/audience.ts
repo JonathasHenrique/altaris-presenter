@@ -11,6 +11,26 @@ const compositor = new SlideCompositor(canvas, {
   isClearText: false
 });
 
+function syncProjectorResolution() {
+  const w = window.innerWidth || screen.width || 1920;
+  const h = window.innerHeight || screen.height || 1080;
+  if (w > 0 && h > 0) {
+    const targetW = 1920;
+    const targetH = Math.max(600, Math.min(2400, Math.round(targetW * (h / w))));
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+      compositor.draw();
+    }
+  }
+}
+
+window.addEventListener("resize", syncProjectorResolution);
+document.addEventListener("fullscreenchange", syncProjectorResolution);
+syncProjectorResolution();
+setTimeout(syncProjectorResolution, 150);
+setTimeout(syncProjectorResolution, 500);
+
 async function closeAudienceWindow() {
   if (inTauri()) {
     try {

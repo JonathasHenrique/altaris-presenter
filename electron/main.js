@@ -133,23 +133,29 @@ function toggleAudienceWindow(monitorIndex) {
   }
 
   const displays = screen.getAllDisplays();
-  let targetDisplay = displays[0];
+  const primary = screen.getPrimaryDisplay();
+  let targetDisplay = primary;
+
   if (typeof monitorIndex === "number" && displays[monitorIndex]) {
     targetDisplay = displays[monitorIndex];
   } else if (displays.length > 1) {
-    targetDisplay = displays[1];
+    // Escolhe automaticamente o monitor secundário (não primário)
+    const secondary = displays.find((d) => d.id !== primary.id);
+    targetDisplay = secondary || displays[1];
   }
 
   const hasMultiple = displays.length > 1;
+  const bounds = targetDisplay.bounds;
 
   audienceWindow = new BrowserWindow({
-    x: targetDisplay.bounds.x,
-    y: targetDisplay.bounds.y,
-    width: 960,
-    height: 540,
+    x: bounds.x,
+    y: bounds.y,
+    width: hasMultiple ? bounds.width : 960,
+    height: hasMultiple ? bounds.height : 540,
     title: "Altaris - Projeção",
     frame: !hasMultiple,
-    fullscreen: hasMultiple,
+    fullscreen: false,
+    alwaysOnTop: hasMultiple,
     backgroundColor: "#000000",
     webPreferences: {
       preload: resolvePreloadPath(),
@@ -157,6 +163,14 @@ function toggleAudienceWindow(monitorIndex) {
       contextIsolation: true
     }
   });
+
+  // Garante posicionamento exato no monitor alvo (mesmo com coordenadas negativas no Windows)
+  audienceWindow.setBounds(bounds);
+
+  if (hasMultiple) {
+    audienceWindow.setMenuBarVisibility(false);
+    audienceWindow.setFullScreen(true);
+  }
 
   loadWindowPage(audienceWindow, "audience.html");
   audienceWindow.on("closed", () => { audienceWindow = null; });
@@ -171,19 +185,27 @@ function toggleStageWindow(monitorIndex) {
   }
 
   const displays = screen.getAllDisplays();
-  let targetDisplay = displays[0];
+  const primary = screen.getPrimaryDisplay();
+  let targetDisplay = primary;
+
   if (typeof monitorIndex === "number" && displays[monitorIndex]) {
     targetDisplay = displays[monitorIndex];
   } else if (displays.length > 1) {
-    targetDisplay = displays[1];
+    const secondary = displays.find((d) => d.id !== primary.id);
+    targetDisplay = secondary || displays[1];
   }
 
+  const hasMultiple = displays.length > 1;
+  const bounds = targetDisplay.bounds;
+
   stageWindow = new BrowserWindow({
-    x: targetDisplay.bounds.x,
-    y: targetDisplay.bounds.y,
-    width: 960,
-    height: 540,
+    x: bounds.x,
+    y: bounds.y,
+    width: hasMultiple ? bounds.width : 960,
+    height: hasMultiple ? bounds.height : 540,
     title: "Altaris - Retorno de Palco",
+    frame: !hasMultiple,
+    fullscreen: false,
     backgroundColor: "#000000",
     webPreferences: {
       preload: resolvePreloadPath(),
@@ -191,6 +213,13 @@ function toggleStageWindow(monitorIndex) {
       contextIsolation: true
     }
   });
+
+  stageWindow.setBounds(bounds);
+
+  if (hasMultiple) {
+    stageWindow.setMenuBarVisibility(false);
+    stageWindow.setFullScreen(true);
+  }
 
   loadWindowPage(stageWindow, "stage.html");
   stageWindow.on("closed", () => { stageWindow = null; });
@@ -274,8 +303,11 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle("read_app_file", async (_, { relativePath }) => {
-    const cleanRel = relativePath.replace(/^(\.\/|\/)/, "");
+    const cleanRel = relativePath.replace(/^(\.\/|\/)/, "").replace(/\\/g, "/");
     const appBase = typeof app.getAppPath === "function" ? app.getAppPath() : __dirname;
+    const exeDir = path.dirname(process.execPath || "");
+    const cwd = process.cwd();
+
     const candidatePaths = [
       path.join(appBase, cleanRel),
       path.join(appBase, "dist", cleanRel),
@@ -284,17 +316,29 @@ function setupIpcHandlers() {
       path.join(__dirname, "dist", cleanRel),
       path.join(__dirname, "..", cleanRel),
       path.join(__dirname, "..", "public", cleanRel),
+      path.join(cwd, cleanRel),
+      path.join(cwd, "public", cleanRel),
+      path.join(cwd, "dist", cleanRel),
+      path.join(exeDir, cleanRel),
+      path.join(exeDir, "resources", cleanRel),
+      path.join(exeDir, "resources", "app.asar", cleanRel),
+      path.join(exeDir, "resources", "app.asar", "dist", cleanRel),
+      path.join(exeDir, "resources", "app.asar", "public", cleanRel),
       path.join(process.resourcesPath || "", cleanRel),
       path.join(process.resourcesPath || "", "public", cleanRel),
       path.join(process.resourcesPath || "", "app.asar", cleanRel),
       path.join(process.resourcesPath || "", "app.asar", "dist", cleanRel),
       path.join(process.resourcesPath || "", "app.asar", "public", cleanRel)
     ];
+
     for (const p of candidatePaths) {
-      if (fs.existsSync(p)) {
-        return fs.readFileSync(p, "utf8");
-      }
+      try {
+        if (fs.existsSync(p)) {
+          return fs.readFileSync(p, "utf8");
+        }
+      } catch {}
     }
+    console.warn("[read_app_file] Não encontrado:", relativePath);
     throw new Error("Arquivo não encontrado: " + relativePath);
   });
 
@@ -443,11 +487,18 @@ function setupIpcHandlers() {
 }
 
 function createMainWindow() {
+  const primary = screen.getPrimaryDisplay();
+  const workArea = primary.workArea || primary.bounds;
+  const initialWidth = Math.min(1440, Math.max(960, workArea.width - 40));
+  const initialHeight = Math.min(900, Math.max(560, workArea.height - 40));
+
   mainWindow = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 1100,
-    minHeight: 720,
+    x: Math.max(0, workArea.x + Math.floor((workArea.width - initialWidth) / 2)),
+    y: Math.max(0, workArea.y + Math.floor((workArea.height - initialHeight) / 2)),
+    width: initialWidth,
+    height: initialHeight,
+    minWidth: 960,
+    minHeight: 540,
     title: "Altaris - Centro de Controle",
     backgroundColor: "#0a0d14",
     webPreferences: {

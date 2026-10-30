@@ -3858,11 +3858,20 @@ async function bootstrap() {
     }
   }).catch(() => {});
 
+  // Popula os seletores imediatamente com a lista canônica (zero delay de interface)
+  renderTopBarBibleButtons();
+  populateBibleDefaultSelect();
+  populateBibleBooks(true);
+
   Promise.all([BibleEngine.init(), SongEngine.init()]).then(() => {
     const ver = BibleEngine.getActiveVersion();
     labelActiveBible.textContent = ver.toUpperCase();
     renderTopBarBibleButtons();
     populateBibleDefaultSelect();
+    populateBibleBooks(true);
+    if (modalBibleNavigator && modalBibleNavigator.style.display !== "none") {
+      renderBibleNavigator();
+    }
 
     // Atualiza o item bíblico inicial com o capítulo inteiro de João 3 carregado!
     const joVerses = BibleEngine.findVerses("jo 3 16");

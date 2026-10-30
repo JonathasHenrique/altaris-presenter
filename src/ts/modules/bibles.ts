@@ -106,29 +106,75 @@ const BOOK_MAP: Record<string, string> = {
   "ap": "Apocalipse", "apocalipse": "Apocalipse", "apoc": "Apocalipse"
 };
 
-export const CANONICAL_66_BOOKS: { abbrev: string; name: string }[] = [
-  { abbrev: "gn", name: "Gênesis" }, { abbrev: "ex", name: "Êxodo" }, { abbrev: "lv", name: "Levítico" },
-  { abbrev: "nm", name: "Números" }, { abbrev: "dt", name: "Deuteronômio" }, { abbrev: "js", name: "Josué" },
-  { abbrev: "jz", name: "Juízes" }, { abbrev: "rt", name: "Rute" }, { abbrev: "1sm", name: "1 Samuel" },
-  { abbrev: "2sm", name: "2 Samuel" }, { abbrev: "1rs", name: "1 Reis" }, { abbrev: "2rs", name: "2 Reis" },
-  { abbrev: "1cr", name: "1 Crônicas" }, { abbrev: "2cr", name: "2 Crônicas" }, { abbrev: "ed", name: "Esdras" },
-  { abbrev: "ne", name: "Neemias" }, { abbrev: "et", name: "Ester" }, { abbrev: "jó", name: "Jó" },
-  { abbrev: "sl", name: "Salmos" }, { abbrev: "pv", name: "Provérbios" }, { abbrev: "ec", name: "Eclesiastes" },
-  { abbrev: "ct", name: "Cânticos" }, { abbrev: "is", name: "Isaías" }, { abbrev: "jr", name: "Jeremias" },
-  { abbrev: "lm", name: "Lamentações de Jeremias" }, { abbrev: "ez", name: "Ezequiel" }, { abbrev: "dn", name: "Daniel" },
-  { abbrev: "os", name: "Oséias" }, { abbrev: "jl", name: "Joel" }, { abbrev: "am", name: "Amós" },
-  { abbrev: "ob", name: "Obadias" }, { abbrev: "jn", name: "Jonas" }, { abbrev: "mq", name: "Miquéias" },
-  { abbrev: "na", name: "Naum" }, { abbrev: "hc", name: "Habacuque" }, { abbrev: "sf", name: "Sofonias" },
-  { abbrev: "ag", name: "Ageu" }, { abbrev: "zc", name: "Zacarias" }, { abbrev: "ml", name: "Malaquias" },
-  { abbrev: "mt", name: "Mateus" }, { abbrev: "mc", name: "Marcos" }, { abbrev: "lc", name: "Lucas" },
-  { abbrev: "jo", name: "João" }, { abbrev: "at", name: "Atos" }, { abbrev: "rm", name: "Romanos" },
-  { abbrev: "1co", name: "1 Coríntios" }, { abbrev: "2co", name: "2 Coríntios" }, { abbrev: "gl", name: "Gálatas" },
-  { abbrev: "ef", name: "Efésios" }, { abbrev: "fp", name: "Filipenses" }, { abbrev: "cl", name: "Colossenses" },
-  { abbrev: "1ts", name: "1 Tessalonicenses" }, { abbrev: "2ts", name: "2 Tessalonicenses" }, { abbrev: "1tm", name: "1 Timóteo" },
-  { abbrev: "2tm", name: "2 Timóteo" }, { abbrev: "tt", name: "Tito" }, { abbrev: "fm", name: "Filemom" },
-  { abbrev: "hb", name: "Hebreus" }, { abbrev: "tg", name: "Tiago" }, { abbrev: "1pe", name: "1 Pedro" },
-  { abbrev: "2pe", name: "2 Pedro" }, { abbrev: "1jo", name: "1 João" }, { abbrev: "2jo", name: "2 João" },
-  { abbrev: "3jo", name: "3 João" }, { abbrev: "jd", name: "Judas" }, { abbrev: "ap", name: "Apocalipse" }
+export const CANONICAL_66_BOOKS: { abbrev: string; name: string; chapters: number }[] = [
+  // Antigo Testamento (39)
+  { abbrev: "gn", name: "Gênesis", chapters: 50 },
+  { abbrev: "ex", name: "Êxodo", chapters: 40 },
+  { abbrev: "lv", name: "Levítico", chapters: 27 },
+  { abbrev: "nm", name: "Números", chapters: 36 },
+  { abbrev: "dt", name: "Deuteronômio", chapters: 34 },
+  { abbrev: "js", name: "Josué", chapters: 24 },
+  { abbrev: "jz", name: "Juízes", chapters: 21 },
+  { abbrev: "rt", name: "Rute", chapters: 4 },
+  { abbrev: "1sm", name: "1 Samuel", chapters: 31 },
+  { abbrev: "2sm", name: "2 Samuel", chapters: 24 },
+  { abbrev: "1rs", name: "1 Reis", chapters: 22 },
+  { abbrev: "2rs", name: "2 Reis", chapters: 25 },
+  { abbrev: "1cr", name: "1 Crônicas", chapters: 29 },
+  { abbrev: "2cr", name: "2 Crônicas", chapters: 36 },
+  { abbrev: "ed", name: "Esdras", chapters: 10 },
+  { abbrev: "ne", name: "Neemias", chapters: 13 },
+  { abbrev: "et", name: "Ester", chapters: 10 },
+  { abbrev: "jó", name: "Jó", chapters: 42 },
+  { abbrev: "sl", name: "Salmos", chapters: 150 },
+  { abbrev: "pv", name: "Provérbios", chapters: 31 },
+  { abbrev: "ec", name: "Eclesiastes", chapters: 12 },
+  { abbrev: "ct", name: "Cânticos", chapters: 8 },
+  { abbrev: "is", name: "Isaías", chapters: 66 },
+  { abbrev: "jr", name: "Jeremias", chapters: 52 },
+  { abbrev: "lm", name: "Lamentações de Jeremias", chapters: 5 },
+  { abbrev: "ez", name: "Ezequiel", chapters: 48 },
+  { abbrev: "dn", name: "Daniel", chapters: 12 },
+  { abbrev: "os", name: "Oséias", chapters: 14 },
+  { abbrev: "jl", name: "Joel", chapters: 3 },
+  { abbrev: "am", name: "Amós", chapters: 9 },
+  { abbrev: "ob", name: "Obadias", chapters: 1 },
+  { abbrev: "jn", name: "Jonas", chapters: 4 },
+  { abbrev: "mq", name: "Miquéias", chapters: 7 },
+  { abbrev: "na", name: "Naum", chapters: 3 },
+  { abbrev: "hc", name: "Habacuque", chapters: 3 },
+  { abbrev: "sf", name: "Sofonias", chapters: 3 },
+  { abbrev: "ag", name: "Ageu", chapters: 2 },
+  { abbrev: "zc", name: "Zacarias", chapters: 14 },
+  { abbrev: "ml", name: "Malaquias", chapters: 4 },
+  // Novo Testamento (27)
+  { abbrev: "mt", name: "Mateus", chapters: 28 },
+  { abbrev: "mc", name: "Marcos", chapters: 16 },
+  { abbrev: "lc", name: "Lucas", chapters: 24 },
+  { abbrev: "jo", name: "João", chapters: 21 },
+  { abbrev: "at", name: "Atos", chapters: 28 },
+  { abbrev: "rm", name: "Romanos", chapters: 16 },
+  { abbrev: "1co", name: "1 Coríntios", chapters: 16 },
+  { abbrev: "2co", name: "2 Coríntios", chapters: 13 },
+  { abbrev: "gl", name: "Gálatas", chapters: 6 },
+  { abbrev: "ef", name: "Efésios", chapters: 6 },
+  { abbrev: "fp", name: "Filipenses", chapters: 4 },
+  { abbrev: "cl", name: "Colossenses", chapters: 4 },
+  { abbrev: "1ts", name: "1 Tessalonicenses", chapters: 5 },
+  { abbrev: "2ts", name: "2 Tessalonicenses", chapters: 3 },
+  { abbrev: "1tm", name: "1 Timóteo", chapters: 6 },
+  { abbrev: "2tm", name: "2 Timóteo", chapters: 4 },
+  { abbrev: "tt", name: "Tito", chapters: 3 },
+  { abbrev: "fm", name: "Filemom", chapters: 1 },
+  { abbrev: "hb", name: "Hebreus", chapters: 13 },
+  { abbrev: "tg", name: "Tiago", chapters: 5 },
+  { abbrev: "1pe", name: "1 Pedro", chapters: 5 },
+  { abbrev: "2pe", name: "2 Pedro", chapters: 3 },
+  { abbrev: "1jo", name: "1 João", chapters: 5 },
+  { abbrev: "2jo", name: "2 João", chapters: 1 },
+  { abbrev: "3jo", name: "3 João", chapters: 1 },
+  { abbrev: "jd", name: "Judas", chapters: 1 },
+  { abbrev: "ap", name: "Apocalipse", chapters: 22 }
 ];
 
 export interface BibleCatalogEntry {
@@ -282,10 +328,18 @@ export class BibleEngine {
   }
 
   static getBooks(): { name: string; abbrev: string; chapterCount: number }[] {
-    return this.books.map((b) => ({
+    if (this.books && this.books.length > 0) {
+      return this.books.map((b) => ({
+        name: b.name,
+        abbrev: b.abbrev,
+        chapterCount: b.chapters.length
+      }));
+    }
+    // Fallback canônico imediato: sempre retorna os 66 livros com contagem de capítulos exata
+    return CANONICAL_66_BOOKS.map((b) => ({
       name: b.name,
       abbrev: b.abbrev,
-      chapterCount: b.chapters.length
+      chapterCount: b.chapters
     }));
   }
 

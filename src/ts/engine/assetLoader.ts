@@ -18,11 +18,16 @@ export async function loadAppJson<T = any>(relPath: string): Promise<T | null> {
   }
 
   // 2. Fetch com caminhos relativos e absolutos
+  const host = typeof window !== "undefined" && window.location ? window.location.host : "";
   const pathsToTry = [
     `./${clean}`,
     `/${clean}`,
-    `http://localhost:7878/${clean}`
-  ];
+    host ? `http://${host}/${clean}` : "",
+    `http://localhost:5173/${clean}`,
+    `http://localhost:7878/${clean}`,
+    `./public/${clean}`,
+    `/public/${clean}`
+  ].filter(Boolean);
 
   for (const p of pathsToTry) {
     try {

@@ -727,7 +727,10 @@ footer.status-bar {
   display: grid;
   grid-template-columns: 220px 180px 1fr;
   gap: 12px;
-  height: 480px;
+  flex: 1;
+  min-height: 260px;
+  max-height: calc(88vh - 120px);
+  height: 100%;
 }
 
 .bible-nav-col {
@@ -1579,4 +1582,86 @@ video::-webkit-media-controls-panel {
   font-size: 0.75rem;
   border-radius: 6px;
   flex-shrink: 0;
+}
+
+/* Responsividade Completa para Windows com Escala DPI 125%-150% (Telas 1280x720 e laptops compactos) */
+@media (max-height: 768px), (max-width: 1366px) {
+  #app {
+    grid-template-rows: 44px 1fr 26px;
+  }
+
+  header.app-nav {
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  .brand {
+    min-width: 150px;
+    gap: 6px;
+  }
+
+  .brand-title {
+    font-size: 0.95rem;
+  }
+
+  .spotlight-bar {
+    max-width: 320px;
+    padding: 4px 10px;
+  }
+
+  main.workspace {
+    grid-template-columns: 240px minmax(0, 1fr) 290px;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .panel-header {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .panel-content {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .btn-big-nav {
+    padding: 6px 8px;
+    font-size: 0.78rem;
+  }
+
+  .quick-nav-bar {
+    margin: 4px 0 8px;
+    gap: 6px;
+  }
+
+  .slide-card {
+    padding: 8px 10px;
+  }
+
+  .slide-text-preview {
+    font-size: 0.78rem;
+  }
+
+  .bible-nav-container {
+    grid-template-columns: 190px 150px 1fr;
+    gap: 8px;
+    min-height: 240px;
+  }
+
+  .modal-nav-tab {
+    min-width: 75px;
+    padding: 6px 8px;
+    font-size: 0.74rem;
+  }
+
+  .modal-tabs-header {
+    padding: 6px 10px;
+    gap: 4px;
+  }
+
+  .chapter-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
 }

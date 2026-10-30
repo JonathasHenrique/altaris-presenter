@@ -104,7 +104,7 @@ function configureAutoplayVideo(vid: HTMLVideoElement, src: string) {
 }
 
 const VW = 1920;
-const VH = 1080;
+const DEFAULT_VH = 1080;
 const FONT = "Inter, system-ui, sans-serif";
 
 interface FitResult {
@@ -147,6 +147,16 @@ export class SlideCompositor {
     const initialVid = resolveVideoSrc(this.options.backgroundTheme, this.options.customBackgroundVideo);
     this.loadBgVideo(initialVid);
     this.startLoop();
+  }
+
+  /**
+   * Resolução vertical virtual dinâmica calculada a partir do aspect ratio real do canvas.
+   * Em 16:9 -> 1080. Em 4:3 (projetores SVGA/XGA) -> 1440. Em 16:10 -> 1200.
+   * Garante preenchimento 100% da tela sem bordas pretas (letterbox/pillarbox).
+   */
+  public get vh(): number {
+    if (!this.canvas || !this.canvas.width || !this.canvas.height) return DEFAULT_VH;
+    return Math.round(VW * (this.canvas.height / this.canvas.width)) || DEFAULT_VH;
   }
 
   setSlide(slide: Slide | null) {
@@ -442,6 +452,7 @@ export class SlideCompositor {
 
   private drawNativeSlideLayout(layout: SlideLayout) {
     const ctx = this.ctx;
+    const VH = this.vh;
 
     // 1. Fundo do Slide
     if (layout.bgImage && !this.options.alphaChannel) {
@@ -591,6 +602,7 @@ export class SlideCompositor {
   private drawCoverSource(source: HTMLImageElement | HTMLVideoElement, srcW: number, srcH: number) {
     if (!srcW || !srcH) return;
     const ctx = this.ctx;
+    const VH = this.vh;
     const scale = Math.max(VW / srcW, VH / srcH);
     const dw = srcW * scale;
     const dh = srcH * scale;
@@ -602,6 +614,7 @@ export class SlideCompositor {
   private drawContainSource(source: HTMLImageElement | HTMLVideoElement, srcW: number, srcH: number) {
     if (!srcW || !srcH) return;
     const ctx = this.ctx;
+    const VH = this.vh;
     if (!(source instanceof HTMLVideoElement)) {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, VW, VH);
@@ -615,6 +628,7 @@ export class SlideCompositor {
   }
 
   private drawSlideMedia() {
+    const VH = this.vh;
     if (this.slideMediaVideo) {
       this.ctx.clearRect(0, 0, VW, VH);
     } else if (this.slideMediaImg) {
@@ -629,6 +643,7 @@ export class SlideCompositor {
 
   private drawBackground() {
     const ctx = this.ctx;
+    const VH = this.vh;
     const theme = this.options.backgroundTheme || "nebula";
     const dimmer = this.options.backgroundDimmer ?? 0.45;
 
@@ -703,6 +718,7 @@ export class SlideCompositor {
 
   private drawFullSlide(slide: Slide) {
     const ctx = this.ctx;
+    const VH = this.vh;
     const activeFont = this.options.fontFamily || FONT;
     const activeColor = this.options.textColor || "#ffffff";
     const scale = this.options.fontSizeScale || "large";
@@ -798,6 +814,7 @@ export class SlideCompositor {
 
   private drawConfiguredLowerThird(slide: Slide) {
     const ctx = this.ctx;
+    const VH = this.vh;
     ctx.save();
     const shape = this.options.obsShape || "pill";
     const pos = this.options.obsPosition || "bottom";
@@ -906,6 +923,7 @@ export class SlideCompositor {
 
   private ltMinimal(slide: Slide) {
     const ctx = this.ctx;
+    const VH = this.vh;
     ctx.save();
     const x = 90;
     const logoSpace = this.logoImg ? 140 : 0;
@@ -946,6 +964,7 @@ export class SlideCompositor {
 
   private ltFullWidth(slide: Slide) {
     const ctx = this.ctx;
+    const VH = this.vh;
     ctx.save();
     const logoSpace = this.logoImg ? 170 : 0;
     const textX = 90 + logoSpace;
@@ -985,6 +1004,7 @@ export class SlideCompositor {
 
   private ltGlassPill(slide: Slide) {
     const ctx = this.ctx;
+    const VH = this.vh;
     ctx.save();
     const bx = 90;
     const bw = VW - 180;
@@ -1035,6 +1055,7 @@ export class SlideCompositor {
 
   private ltBibleBox(slide: Slide) {
     const ctx = this.ctx;
+    const VH = this.vh;
     ctx.save();
     const bx = 120;
     const bw = VW - 240;
@@ -1092,6 +1113,7 @@ export class SlideCompositor {
 
   private drawAlertBanner(alert: string) {
     const ctx = this.ctx;
+    const VH = this.vh;
     const h = 72;
     ctx.save();
     ctx.fillStyle = "rgba(220,38,38,0.95)";
@@ -1105,6 +1127,7 @@ export class SlideCompositor {
 
   private drawClock(pos: "topRight" | "bottomRight" | "bottomLeft") {
     const ctx = this.ctx;
+    const VH = this.vh;
     ctx.save();
     const now = new Date();
     const timeStr = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
