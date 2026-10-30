@@ -398,7 +398,7 @@ export class SlideCompositor {
 
   // ---------- Desenho ----------
 
-  private draw() {
+  public draw() {
     const ctx = this.ctx;
     const scale = this.canvas.width / VW;
 
